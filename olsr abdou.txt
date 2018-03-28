@@ -2,7 +2,6 @@
 /* Does not affect models behavior.					*/
 static void 
 olsr_rte_neighborhood_topology_check_hello (void)
-
 	{
 	FIN (olsr_rte_neighborhood_topology_check_hello());
 	
@@ -10,7 +9,6 @@ olsr_rte_neighborhood_topology_check_hello (void)
 	
 	FOUT;
 	}
-
 static void 
 olsr_rte_neighborhood_topology_check_TC (void)
 	{
@@ -20,12 +18,6 @@ olsr_rte_neighborhood_topology_check_TC (void)
 	
 	FOUT;
 	}
-
-
-
-
-
-//kkk
 	
 static void
 olsr_rte_globals_init (void)
@@ -34,6 +26,8 @@ olsr_rte_globals_init (void)
 
 	/* Iniitalize once shared OLSR globals such as memory pools, global statistics, etc. */
 	FIN (olsr_rte_globals_init);
+	
+	
 
 	if (!initialized)
 		{
@@ -63,8 +57,6 @@ olsr_rte_globals_init (void)
 		/* initialize various memory pools */
 		olsr_djk_state_pmoh = op_prg_pmo_define ("OLSR Dijkstra State", 
 			sizeof (OlsrT_Djk_State), 100);
-		noeud_state_pmoh = op_prg_pmo_define ("noud state", 
-			sizeof (neoud_state), 100);
 		
 		olsr_djk_edge_state_pmoh = op_prg_pmo_define ("OLSR Dijkstra Edge State", 
 		 	sizeof (OlsrT_Djk_Edge_State), 100);
@@ -103,28 +95,22 @@ olsr_rte_globals_init (void)
 			sizeof (OlsrT_MID_Message), 32);
 		
 		hello_msg_pmh = op_prg_pmo_define ("OLSR Hello Message",
-			sizeof (OlsrT_Hello_Message), 64); /*parce que on a ajouter un champs pour int energie */
+			sizeof (OlsrT_Hello_Message), 32);
 		
 		hello_data_pmh = op_prg_pmo_define ("OLSR Hello Message Data",
-			sizeof (OlsrT_Hello_Message_Data), 64);//////*************32******/////////////////////////////////////
+			sizeof (OlsrT_Hello_Message_Data), 32);
 
 		tc_msg_pmh = op_prg_pmo_define ("OLSR TC Message",
 			sizeof (OlsrT_TC_Message), 32);
 
 		olsr_msg_pmh = op_prg_pmo_define ("OLSR Message",
-			sizeof (OlsrT_Message), 64);////////////***************32************////////////
+			sizeof (OlsrT_Message), 32);
 		
         new_addr_pmh = op_prg_pmo_define ("OLSR Address",
 			sizeof (int), 32);
 		
         deferred_hello_info_pmh = prg_pmo_define_with_props ("Deferred OLSR HELLO info",
 			sizeof (OlsrT_Rte_Deferred_Hello_Info), 32, PRGC_MEM_DONT_CLEAR);
-		
-		sdn_pmh = op_prg_pmo_define ("stablilte",
-		sizeof (double), 32);
-
-	/*	Msg_SDN_pmh = op_prg_pmo_define ("Message SDN",
-			sizeof (Msg_SDN), 32);
 
 		/* Register a namespace for OLSR Topology Graphs.	*/
 		prg_graph_state_handler_register ("OLSR Topology Graph", 
@@ -132,7 +118,7 @@ olsr_rte_globals_init (void)
 		
 		initialized = 1;
 		}
-	
+
 	FOUT;
 	}
 
@@ -160,9 +146,10 @@ olsr_rte_sv_init (void)
 	void*						old_entry = OPC_NIL;
 	
 	Boolean 					main_address_assigned = OPC_FALSE;
-
+	
 	/** Initialize the state variables	**/
 	FIN (olsr_rte_sv_init (void));
+	
 	
 	/* Obtain the process id of this module.*/
 	own_module_objid = op_id_self ();
@@ -332,7 +319,7 @@ olsr_rte_sv_init (void)
 					(is_ipv6_enabled ? InetC_Addr_Family_v6:InetC_Addr_Family_v4));
 				
 				own_main_address = inet_rtab_unique_addr_convert (inet_own_main_address, &duplicate_status);
-			if (op_prg_odb_ltrace_active ("mpr_trace"))
+				if (op_prg_odb_ltrace_active ("mpr_trace"))
 					printf ("-Own MA is %d", own_main_address);
 				main_address_assigned = OPC_TRUE;
 				
@@ -536,7 +523,6 @@ olsr_rte_sv_init (void)
 				
 	 state_ptr->addr = own_main_address;
 	 state_ptr->willingness = OLSRC_INVALID;
-	 state_ptr->dist=0;
 				
 	 /* Set the client state on the vertex */
 	 prg_vertex_client_state_set (root_vertex_ptr, OLSRC_DJK_STATE, (void *) state_ptr);
@@ -545,9 +531,10 @@ olsr_rte_sv_init (void)
 	 prg_bin_hash_table_item_insert (djk_hash_table_ptr, &own_main_address, root_vertex_ptr, &old_entry);
 	 
 	 last_rte_calc_time = 0;
-
+	 
 	FOUT;
 	}
+
 
 static void
 olsr_rte_local_stats_reg (void)
@@ -589,8 +576,6 @@ olsr_rte_attributes_parse (Objid own_module_objid)
 	op_ima_obj_attr_get (olsr_parms_child_id, "Neighbor Hold Time", &neighbor_hold_time);
 	op_ima_obj_attr_get (olsr_parms_child_id, "Topology Hold Time", &tc_hold_time);
 	op_ima_obj_attr_get (olsr_parms_child_id, "Duplicate Message Hold Time", &dup_hold_time);
-	op_ima_obj_attr_get(olsr_parms_child_id,"Intial Energy",&intial_energy);
-	
 	status = op_ima_obj_attr_get (olsr_parms_child_id, "Addressing Mode", &is_ipv6_enabled);
 
 	if (op_ima_sim_attr_exists ("OLSR Hello Processing Time Quantum"))
@@ -614,189 +599,12 @@ olsr_rte_attributes_parse (Objid own_module_objid)
 /*********************************************************************/
 /******************** PACKET ARRIVAL FUNCTIONS ***********************/
 /*********************************************************************/
-static int
-Packet_Zone (double puissance)
-	{
-
-	double zone1,zone2,zone3,zone4,zone5,zone6,zone7,zone8,zone9,zone10,zone11,zone12,zone13,zone14,zone15,zone16,zone17,zone18;
-	double zone19,zone20,zone21,zone22,zone23,zone24,zone25,zone26,zone27,zone28,zone29,zone30;
-	int 		zone;
-
-	FIN ((<args>));
-	
-	zone1 = 0.000979643;		
-	zone2 = 0.000244910;
-	zone3 = 0.000108849;
-	zone4 = 0.000061227;
-	zone5 = 0.000039185;
-	zone6 = 0.000027212;
-	zone7 =	0.000019992;
-	zone8 = 0.000015306;
-	zone9 = 0.000012094;
-	zone10= 0.0000097964;
-	zone11 = 0.0000080962;		
-	zone12 = 0.0000068030;
-	zone13 = 0.0000057967;
-	zone14 = 0.0000049981;
-	zone15 = 0.0000043539;
-	zone16 = 0.0000038267;
-	zone17 = 0.0000033897;	
-	zone18 = 0.0000030235;
-	zone19 = 0.0000027136;
-	zone20= 0.0000024491;
-	zone21 = 0.0000022214;		
-	zone22 = 0.000002024;
-	zone23 = 0.0000018518;
-	zone24 = 0.0000017007;
-	zone25 = 0.0000015674;
-	zone26 = 0.0000014491;
-	zone27 = 0.0000013438;	
-	zone28 = 0.0000012495;
-	zone29 = 0.0000011648;
-	zone30= 0.0000064855;
-		
-		
-		
-		
-	
-	zone = 100;
-	
-	if(puissance > zone1)
-		{zone = 1;}
-		else
-			if(puissance > zone2)
-				{zone = 2;}
-				
-				else
-					if(puissance > zone3)
-						{zone = 3;}
-						
-						else
-							if(puissance > zone4)
-								zone = 4;
-								
-								else
-									if(puissance > zone5)
-										zone = 5;
-	
-										else
-											if(puissance > zone6)
-												zone = 6;
-												
-												else
-												if(puissance > zone7)
-													zone = 7;
-													
-														else
-														if(puissance > zone8)
-															zone = 8;
-															
-															else
-															if(puissance > zone9)
-																zone = 9;
-	
-																else
-																	if(puissance > zone10)
-																		zone = 10;
-																
-	else
-	if(puissance > zone11)
-		{zone = 11;}
-		else
-			if(puissance > zone12)
-				{zone = 12;}
-				
-				else
-					if(puissance > zone13)
-						{zone = 13;}
-						
-						else
-							if(puissance > zone14)
-								zone = 14;
-								
-								else
-									if(puissance > zone15)
-										zone = 15;
-	
-										else
-											if(puissance > zone16)
-												zone = 16;
-												
-												else
-												if(puissance > zone17)
-													zone = 17;
-													
-														else
-														if(puissance > zone18)
-															zone = 18;
-															
-															else
-															if(puissance > zone19)
-																zone = 19;
-	
-																else
-																	if(puissance > zone20)
-																		zone = 20;
-	
-
-	
-	else
-	if(puissance > zone21)
-		{zone = 21;}
-		else
-			if(puissance > zone22)
-				{zone = 22;}
-				
-				else
-					if(puissance > zone23)
-						{zone = 23;}
-						
-						else
-							if(puissance > zone24)
-								zone = 24;
-								
-								else
-									if(puissance > zone25)
-										zone = 25;
-	
-										else
-											if(puissance > zone26)
-												zone = 26;
-												
-												else
-												if(puissance > zone27)
-													zone = 27;
-													
-														else
-														if(puissance > zone28)
-															zone = 28;
-															
-															else
-															if(puissance > zone29)
-																zone = 29;
-	
-																else
-																	if(puissance > zone30)
-																		zone = 30;
-
-	
-	
-	
-	FRET (zone);
-}
-
-
-
 
 static void
 olsr_rte_pkt_arrival_handle (void)
 	{
-	Packet*					pkptr;//olsrpacket
-	
-
-
+	Packet*					pkptr;
 	Ici*					ici_ptr;
-	Ici*					ara_ici;
 	const OlsrT_Message*	olsr_message_ptr;
 	InetT_Address*			inet_local_intf_addr_ptr;
 	InetT_Address*			inet_ip_src_addr_ptr;
@@ -810,10 +618,7 @@ olsr_rte_pkt_arrival_handle (void)
 	OlsrT_Duplicate_Set_Entry* 	dup_set_entry_ptr;
 	OlsrT_Neighbor_Set_Entry*	nbr_set_entry_ptr;
 	
-	/***************************************/
-/*int 					arr_energy;
-	/***************************************/
-
+	Ici*					signal_strength_ici;
 		
 	/** Whenever a control packet arrives at the**/
 	/** port where OLSR process is listening, 	**/
@@ -821,37 +626,23 @@ olsr_rte_pkt_arrival_handle (void)
 	/** A packet has arrived. Handle the packet	**/
 	/** appropriately based on its type			**/
 	FIN (olsr_rte_pkt_arrival_handle (void));
-	/*if(get_energy()< 500   )   {  FOUT ;}
-	 update_energy() ;
-
+	
 	/* The process was invoked by the parent		*/
 	/* MANET_RTE_MGR process indicating the arrival	*/
 	/* of a packet.	The packet is OLSR control		*/
 	/* packet. Process depeding upon the MESSAGE	*/
 	/* type.										*/
 	
-
-
 	pkptr = (Packet*) op_pro_argmem_access ();
-	      
-	                                                                              //////////////////// recuperer la puisance du signal du packet ici///////////////////////////
-
-/*****************************************************************/
-    ara_ici=op_pk_ici_get(pkptr);
-	op_ici_attr_get(ara_ici,"valeur_du_signal",&rcvd_power);
-
-	//printf("%g alpha",signal_to_int(rcvd_power));
 	
-
-
-		
-/*****************************************************************/
-         
-	/******************************/
+	// ************************ walid get the signal strength ( force du signal) of node  *************
 	
-	/*printf("Energy in Arrival : %d",update_energy());
+	signal_strength_ici=op_pk_ici_get(pkptr);
+	op_ici_attr_get(signal_strength_ici,"valeur_du_signal",&node_signal_strength);
 	
-	/******************************/
+	//printf("the signal strength is %g \n",signal_to_int(node_signal_strength));
+	
+	// ************************************************************************************************
 		
 	/* Obtain the interface address and ip source address from the installed ICI.*/
 	ici_ptr = op_intrpt_ici ();
@@ -933,12 +724,6 @@ olsr_rte_pkt_arrival_handle (void)
 
 	if (olsr_message_ptr->message_type == OLSRC_HELLO_MESSAGE)
 		{
-		
-
-		
-		
-		
-		
 		/* Defer hello packets processing if appropriate */
 		if (hello_processing_time_quantum > 0)
 			{
@@ -1027,15 +812,11 @@ olsr_rte_pkt_arrival_handle (void)
 	if (do_not_process == OPC_FALSE)
 		{
 		/* Process the message according to msg_type (which can only be TC here -- HELLO processed above) */
-		
-		//////////////////////TC received//////////////////////////////
 		switch (olsr_message_ptr->message_type)
 			{
 			case (OLSRC_TC_MESSAGE):
 				{
 				Boolean			discard_tc;
-				
-
 				
 				if (LTRACE_ACTIVE ||(op_prg_odb_ltrace_active ("trace_tc")== OPC_TRUE))
 					{
@@ -1121,16 +902,6 @@ olsr_rte_pkt_arrival_handle (void)
 		
 	addr_num = olsr_support_main_addr_get (ip_src_addr);
 	nbr_set_entry_ptr = (OlsrT_Neighbor_Set_Entry*) prg_bin_hash_table_item_get (neighbor_set_table, &addr_num);
-	//
-	/*****************************************************************/
-/*if(nbr_set_entry_ptr!=OPC_NIL)
-	{	nbr_set_entry_ptr->val_signal.nbr_msg_recevu++;
-		  nbr_set_entry_ptr->val_signal.val_signal[nbr_set_entry_ptr->val_signal.nbr_msg_recevu++]=rcvd_power;
-	Olsr_Valeur_du_Signal(&nbr_set_entry_ptr,3);
-	printf("\n\n\n\n am the freen table %d\n",nbr_set_entry_ptr->nbr_addr);
-
-	nbr_set_entry_ptr->val_signal.nbr_msg_recevu++;
-	}*/
 	
 	/* If this was already processed TC, we need */
 	/* to check if it is received from SYM NBR   */
@@ -1225,12 +996,6 @@ olsr_rte_pkt_arrival_handle (void)
 			}
 		}
 	
-	
-
-		//olsr_rte_tc_set_print_to_string ();	
-	//olsr_rte_routing_table_print_to_string();///////////////////////////routing
-			
-
 	FOUT;
 	}
 
@@ -1347,14 +1112,11 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 	OlsrT_Hello_Message*				hello_msg_ptr;
 	PrgT_Vector*						hello_msg_data_vptr;
 	OlsrT_Link_Set_Entry*				link_set_entry_ptr;
-
-	OlsrT_Neighbor_Set_Entry*			ara;
-//	int									max;
-//int                                 i;
-	int					                nbr_msg_recevu;
-	int neighbor_rec_energy ;
+	
 	FIN (olsr_rte_process_hello (OlsrT_Message*, int, int));
-
+	
+	
+	
 	/* Get information from the olsr message header */
 	originator_addr = olsr_message_ptr->originator_addr;
 	message_size = olsr_message_ptr->message_size;
@@ -1368,19 +1130,8 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 	
 	/* Get information from hello message */
 	htime = hello_msg_ptr->htime;
-
 	willingness = hello_msg_ptr->willingness;
-	
-	//////////*recupirer l'energie du noued voisin a parrtir le message hello *////////////////	
-	
-	neighbor_rec_energy =hello_msg_ptr->res_energy;
-	energy_voisin = neighbor_rec_energy ;
-	
-	
-	//printf("lenergy recu du voision est  =  %d", energy_voisin);
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	
 	/* Get the list of hello msg data with different linkcodes */
 	hello_msg_data_vptr = (PrgT_Vector*) hello_msg_ptr->hello_msg_vptr;
 	
@@ -1429,16 +1180,15 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 			
 			/* New neighbor, create an entry */
 			neighbor_set_entry_ptr = olsr_rte_neighbor_set_entry_create 
-				(originator_addr, OLSRC_NOT_SYM_STATUS, willingness,energy_voisin);   /*new entry*/
+				(originator_addr, OLSRC_NOT_SYM_STATUS, willingness);
+			
+			
 			
 			}
-	
 		
 		/* In either case, added new neigbhor or neighbor already existed */
 		/* increament the link_entries for this neighbor as its a new link */
 		neighbor_set_entry_ptr->link_entry_count++;
-		
-		neighbor_set_entry_ptr->energie=neighbor_rec_energy;  /////  add the energie to the setèentry...
 		
 		/* Add the neighbor_entry_ptr to the link set entry */
 		link_set_entry_ptr->nbr_entry_ptr = neighbor_set_entry_ptr;
@@ -1452,8 +1202,6 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 		if (link_set_entry_ptr->expiry_time < link_set_entry_ptr->ASYM_time)
 			link_set_entry_ptr->expiry_time = link_set_entry_ptr->ASYM_time;
 		}
-	
-	
 	
 	/* Now check if there are any hello message data in this hello mesg */
 	/* hello_msg_data_vptr contains the list of hello msg data listed 	*/
@@ -1587,9 +1335,7 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 				int				link_type, nbr_type;
 				int				intf_addr_num;
 				PrgT_Vector*	intf_addr_vptr;
-				PrgT_Vector*	intf_SDN_vptr;
 				
-				//int				intf_SDN_num;
 				
 				/* For each hello msg data, Get hello msg data */
 				OlsrT_Hello_Message_Data	*hello_msg_data_ptr =
@@ -1603,53 +1349,18 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 						
 				/* Get list of interface address in the data */
 				intf_addr_vptr = (PrgT_Vector*) hello_msg_data_ptr->nbr_intf_addr_vptr;
-				intf_SDN_vptr  = (PrgT_Vector*) hello_msg_data_ptr->nbr_intf_SDN_vptr;
 		
 				/* Get the number of interface address */
 				intf_addr_num = prg_vector_size (intf_addr_vptr);
 				
-				
-				
-				/*
-				intf_SDN_num = prg_vector_size (intf_addr_vptr);
-				
-				olsr_rte_neighbor_set_print_to_string();
-				printf("\n\n\nSoltan,number @=%d and nimber of SDN= %d",intf_addr_num,intf_SDN_num);
-				print_addr(own_main_address);
-				print_addr(neighbor_set_entry_ptr->nbr_addr);
-				
-				
-				
-				
-				for (j=0; j < intf_SDN_num; j++)
-				
-{				double * intf_SDN_ptr=(double*) prg_vector_access (intf_SDN_vptr, j);
-				int * intf_addr_ptr = (int*) prg_vector_access (intf_addr_vptr, j);
-				int	two_hop_nbr_addr = olsr_support_main_addr_get (*intf_addr_ptr);	
-				
-				printf("\n %g    ",*intf_SDN_ptr);
-					print_addr(two_hop_nbr_addr);
-					
-					}
-				*/
 		
 				for (j=0; j < intf_addr_num; j++)
 					{
-					
-					//OlsrT_Two_Hop_Neighbor_Set_Entry *	ar;
-					
 					/* For each of the interface address listed in this hello msg data */
 					int * intf_addr_ptr = (int*) prg_vector_access (intf_addr_vptr, j);
 					
-					double * intf_SDN_ptr=(double*) prg_vector_access (intf_SDN_vptr, j);/******************************************/
-					
 					/* Get the main addr of this interface */
 					int	two_hop_nbr_addr = olsr_support_main_addr_get (*intf_addr_ptr);
-					double intf_SDN=*intf_SDN_ptr;
-					//printf("\n\n\n\n intf_sdn == %g",intf_SDN);
-					
-					
-				
 					
 					/* Update 2-hop neighbor set */
 					if ((nbr_type == OLSRC_SYM_NEIGHBOR) || (nbr_type == OLSRC_MPR_NEIGHBOR))
@@ -1659,29 +1370,7 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 						if (own_main_address != two_hop_nbr_addr)
 							{
 							/* Not my interface, Create a 2hop_set entry */
-							olsr_rte_two_hop_nbr_set_entry_create (two_hop_nbr_addr, originator_addr,intf_SDN, vtime);
-								
-		
-							 
-							
-							
-								/* Get the entry for this nbr_addr	
-								ar = (OlsrT_Two_Hop_Neighbor_Set_Entry*) 
-										prg_bin_hash_table_item_get (two_hop_nbr_set_table, &(two_hop_nbr_addr));
-		
-								
-	if (ar != OPC_NIL)
-		{OlsrT_Nbr_Addr_Two_Hop_Entry*   n;
-		
-		n = (OlsrT_Nbr_Addr_Two_Hop_Entry*)
-			prg_bin_hash_table_item_get (ar->neighbor_hash_ptr, &originator_addr);
-
-		if (n)
-			
-			//nbr_addr_entry_ptr->SDN=SDN;
-	printf("\n ben ara souti %g",n->SDN);else{printf("\nKanb");}
-		}
-	else{printf("\n ara souti second");}*/
+							olsr_rte_two_hop_nbr_set_entry_create (two_hop_nbr_addr, originator_addr, vtime);
 							}
 						}
 
@@ -1696,45 +1385,22 @@ olsr_rte_process_hello (const OlsrT_Message* olsr_message_ptr, int ip_src_addr, 
 				}
 			} /* end this hello msg was recvd from sym nbr */
 		} /* close if-else: (hello_msg_ptr != OPC_NIL)*/
+	// ************************ walid **********************************************************************
 	
-/*	ara=(OlsrT_Neighbor_Set_Entry*) olsr_rte_neighbor_set_entry_get (originator_addr);
+	Olsr_set_Signal_Value(originator_addr);
 	
-	printf("\n\n\n\n****************************\n\n")	;
-	printf("The Neighbor %d recevu %d Message(s) Hello",ara,ara->val_signal.nbr_msg_recevu++);
+	/* This function is called to calculate stability 	*/
+	/* of node and add to the table of neighbor. 		*/
 	
-	
-	max=((ara->val_signal.nbr_msg_recevu>=50)?ara->val_signal.nbr_msg_recevu%50:ara->val_signal.nbr_msg_recevu);
-
-	printf("\nN°		Valeur");	
-	for(i=0;i<max;i++)
-	{
-	printf("\n%d        %g",i,ara->val_signal.val_signal[max]);
-	}
-	
-	ara->val_signal.val_signal[max]=rcvd_power;
-//	printf("\non this case je recevu  %f et %g",ara->val_signal.val_signal[max],rcvd_power);
-	ara->val_signal.nbr_msg_recevu++;
-	//	printf("\n\n\n\n****************************\n\n")	;
-*/
-
-// ara->val_signal.val_signal[max]=rcvd_power;
-   ara=(OlsrT_Neighbor_Set_Entry*) olsr_rte_neighbor_set_entry_get (originator_addr);
-   nbr_msg_recevu=1;
-
-  
-   ara->val_signal.val_signal[ara->val_signal.nbr_msg_recevu]=rcvd_power;
-	printf("\n Indice %d val_signal %g ",ara->val_signal.nbr_msg_recevu,(ara->val_signal.val_signal[ara->val_signal.nbr_msg_recevu]));
-    //ara->val_signal.temps1 = op_sim_time();
-	ara->val_signal.temps2 = op_sim_time();
-	
-   ara->val_signal.nbr_msg_recevu++;
-	Olsr_calculer_stablilte(originator_addr,rcvd_power);
+	Olsr_calculate_stability(originator_addr);
+	// *****************************************************************************************************
+		
 	FOUT;
 		
 	}
 
 static Boolean
-olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /*********************************tc process***************************/
+olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr)
 	{
 	/* Process the received TC message 		*/
 	/* Returns TRUE if this tc message is 	*/
@@ -1750,25 +1416,22 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 	void*						state_ptr = OPC_NIL;
 	int							num_mpr_selectors;
 	Boolean						entry_found = OPC_FALSE;
+	
 	char						tmp_str [256], node_name [256];
 	InetT_Address				inet_tmp_addr;
 	Boolean						tmp_var;
 	int							originator_addr;
 	OlsrT_Neighbor_Set_Entry*	nbr_set_entry_ptr = OPC_NIL;
-	PrgT_Vector*                intf_SDN_vptr;
-	int                         intf_addr_num;
-	PrgT_Vector*                intf_addr_vptr;
-	
-	
-	int               addr_num,j;	
+	int addr_num;	
 
 	FIN ( olsr_rte_process_TC (OlsrT_Message*, int));
+	
 
 	/* Get information from the olsr message header */
 	originator_addr = olsr_message_ptr->originator_addr;
 	message_size = olsr_message_ptr->message_size;
 	message_seq_num = olsr_message_ptr->message_seq_num;
-	vtime = olsr_message_ptr->vtime;
+ 	vtime = olsr_message_ptr->vtime;
 	ttl = olsr_message_ptr->ttl;
 	hop_count = olsr_message_ptr->hop_count;
 	
@@ -1788,7 +1451,7 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 		/* No further processing of this TC message					*/
 		if (op_prg_odb_ltrace_active ("trace_tc"))
 			{
-			printf ("Discarding TC not recvd by SYM 1 hop nbr\n");
+ 			printf ("Discarding TC not recvd by SYM 1 hop nbr\n");
 			}
 		
 		/* Add this in duplicate set, so that this msg is not 		*/
@@ -1802,33 +1465,6 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 	/* Get the tc message from olsr_msg */
 	tc_msg_ptr = (OlsrT_TC_Message*) olsr_message_ptr->message;
 	rcvd_seq_num = tc_msg_ptr->tc_seq_num;
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	  
-	   intf_addr_vptr = (PrgT_Vector*) tc_msg_ptr->mpr_nodes_vptr;
-	   intf_SDN_vptr  = (PrgT_Vector*) tc_msg_ptr->mpr_nodes_SDN_vptr;
-		
-				/* Get the number of interface address */
-				intf_addr_num = prg_vector_size (intf_addr_vptr);
-				for (j=0; j < intf_addr_num; j++)
-					{
-					
-		
-					
-					double * intf_SDN_ptr=(double*) prg_vector_access (intf_SDN_vptr, j);
-					
-					/* Get the SDN  of this interface */
-					
-					double intf_SDN=*intf_SDN_ptr;
-					
-					//printf("\n\n\n\n la fonction de stabilite est %g",intf_SDN);
-					
-	
-	
-					}
-	
-	
-	
-	///////////////////////////////////////////////////////////////////////////////////////////////
 	
 	/* Originator address is the last_addr field in TC table 	*/
 	/* TC entries are indexed with last_addr field				*/
@@ -1845,7 +1481,6 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 			inet_address_to_hname (inet_tmp_addr, node_name);
 			printf ("Entry for last_addr: %s (%s) found in TC table\n", tmp_str, node_name);
 			}
-		
 	
 		/* Check for out-of-order TC */
 		if (tc_set_entry_ptr->tc_seq_num > rcvd_seq_num)
@@ -1950,7 +1585,7 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 						}
 					
 					/* Create a  new entry  */
-					dest_addr_entry_ptr = olsr_rte_tc_dest_addr_entry_create (tc_msg_ptr->mpr_nodes_vptr, rcvd_seq_num,tc_msg_ptr->mpr_nodes_SDN_vptr);
+					dest_addr_entry_ptr = olsr_rte_tc_dest_addr_entry_create (tc_msg_ptr->mpr_nodes_vptr, rcvd_seq_num);
 					
 					/* Add it to the common TC table */
 					oms_topo_table_item_insert (topo_table_hndl, originator_addr, rcvd_seq_num, (void*) dest_addr_entry_ptr);
@@ -2019,7 +1654,7 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 					}
 				
 				/* Create a  new one */
-				dest_addr_entry_ptr = olsr_rte_tc_dest_addr_entry_create (tc_msg_ptr->mpr_nodes_vptr, rcvd_seq_num,tc_msg_ptr->mpr_nodes_SDN_vptr);//////////////////////////Ajouter SDN a la liste de destnation////////////
+				dest_addr_entry_ptr = olsr_rte_tc_dest_addr_entry_create (tc_msg_ptr->mpr_nodes_vptr, rcvd_seq_num);
 					
 				/* Add it to the common TC table */
 				oms_topo_table_item_insert (topo_table_hndl, originator_addr, rcvd_seq_num, (void*) dest_addr_entry_ptr);
@@ -2033,22 +1668,8 @@ olsr_rte_process_TC (const OlsrT_Message* olsr_message_ptr, int ip_src_addr) /**
 			topology_changed = OPC_TRUE;
 
 			olsr_rte_graph_tc_add (tc_set_entry_ptr);
-			
 			}
 		}
-	
-	
-	
-	/*
-					
-					inet_tmp_addr = inet_rtab_index_to_addr_convert (own_main_address);
-					inet_address_print (tmp_str, inet_tmp_addr);
-	
-/*printf("the vertix node %s \n",tmp_str);*/
-	//olsr_rte_neighbor_set_print_to_string();
-	//printf("\n I am the noeud %d",own_main_address);
-	//print_addr(own_main_address);
-//olsr_rte_tc_set_print_to_string(); /* afficher table de topologie*/
 	
 	/* Return false, so that this TC msg */
 	/* can be considered for forwarding  */
@@ -2070,26 +1691,9 @@ olsr_rte_send_hello (Boolean send_jittered)
 	int							originator_addr;
 	OlsrT_Message*				olsr_msg_ptr;
 	Packet*						olsr_pkptr;
-	/*************************************/
-	/*int                         send_energy;
-	/*************************************/
+		
 	FIN (olsr_rte_send_hello (Boolean));
-  
-	if(get_energy()< 1000   )   { FOUT ;} 
 
-
-	/*******************************************************************************************************/
-	
-    update_energy();
-	/*printf("Energy in SEND of HELLO = %d \n",get_energy());
-	
-
-	
-	/*******************************************************************************************************/
-	
-	
-	
-	
 	/* Lazy Method: Remove expired link set entries */
 	olsr_rte_expired_link_set_entries_remove ();
 	
@@ -2097,8 +1701,8 @@ olsr_rte_send_hello (Boolean send_jittered)
 	hello_msg_ptr = (OlsrT_Hello_Message*) op_prg_pmo_alloc (hello_msg_pmh);
 	
 	/* Model the size of the fields in OlsrT_Hello_Message 	 */
-	/* Reserved (16) + Htime (8) + Willingness (8) + energie (32)= 64	bits */
-	olsr_hello_message_size = 64;
+	/* Reserved (16) + Htime (8) + Willingness (8) = 32	bits */
+	olsr_hello_message_size = 32;
 	
 	originator_addr = own_main_address;
 
@@ -2107,10 +1711,6 @@ olsr_rte_send_hello (Boolean send_jittered)
 		{
 		PrgT_Vector*				nbr_intf_addr_vptr;
 		PrgT_Vector*				hello_msg_vptr;
-		
-		PrgT_Vector*				nbr_intf_SDN_vptr;
-		
-		
 		OlsrT_Link_Set_Entry*		link_set_entry_ptr;
 		int							prev_linkcode = 15; /* not possible */
 		
@@ -2135,8 +1735,6 @@ olsr_rte_send_hello (Boolean send_jittered)
 			int							nbr_intf_addr;
 			int							neighbor_main_addr;
 			int							linkcode;
-			
-			
 			OlsrT_Hello_Message_Data*	prev_hello_msg_data_ptr;
 			
 			if (link_set_entry_ptr->SYM_time > op_sim_time())
@@ -2200,10 +1798,6 @@ olsr_rte_send_hello (Boolean send_jittered)
 			if ((linkcode != prev_linkcode) && (prev_hello_msg_data_ptr == OPC_NIL))
 				{
 				int*						nbr_intf_addr_ptr;
-				double*						nbr_intf_SDN_ptr;
-//				void*						ara;
-				OlsrT_Neighbor_Set_Entry* 	ptr = OPC_NIL;
-				
 				
 				/* Different linkcode than previous one & no such linkcode created previously */
 	
@@ -2217,71 +1811,20 @@ olsr_rte_send_hello (Boolean send_jittered)
 				olsr_hello_message_size += 32; 
 							
 				nbr_intf_addr_vptr = prg_vector_create (1, OPC_NIL, OPC_NIL);
-				nbr_intf_SDN_vptr= prg_vector_create (1, OPC_NIL, OPC_NIL);/**********************************************/
 				
 				hello_msg_data_ptr->nbr_intf_addr_vptr = nbr_intf_addr_vptr;
-				
-				
-				
-				hello_msg_data_ptr->nbr_intf_SDN_vptr = nbr_intf_SDN_vptr;/*********************************************/
 			
 				/* Create inet address pointer to insert in the vector */
 				nbr_intf_addr_ptr = olsr_rte_address_create (nbr_intf_addr);
-				nbr_intf_SDN_ptr=get_SDN( nbr_intf_addr);
-				
-				
-		
-		
-	
-			
-	
-
-
-/*			prg_bin_hash_table_item_get (neighbor_set_table, &nbr_intf_addr);
-				if(ptr==OPC_NIL)printf("\n  rah neel");
-
-		
-printf("\n%g the valeur ",ptr->stabilite.SDN);
-				
-				nbr_intf_SDN_ptr=olsr_rte_sdn_create( ptr->stabilite.SDN);
-				
-				
-				//nbr_intf_SDN_ptr= get_SDN(neighbor_main_addr);
-				printf("\n the intf_SDN_vptr=%g",*nbr_intf_SDN_ptr);
-				if(own_main_address==4)
-					{
-				
-				//nbr_intf_SDN_ptr= get_SDN(nbr_intf_addr);
-				print_addr(own_main_address);
-				print_addr(neighbor_main_addr);
-				
-								
-				
-				//nbr_intf_SDN_ptr= get_SDN(neighbor_main_addr);
-				
-				olsr_rte_neighbor_set_print_to_string();
-				}
 				
 				/* Add to the exisiting intf vector (list) */
-				prg_vector_insert (hello_msg_data_ptr->nbr_intf_addr_vptr,nbr_intf_addr_ptr, PRGC_VECTOR_INSERT_POS_TAIL);
-				
-				
-				prg_vector_insert (hello_msg_data_ptr->nbr_intf_SDN_vptr,/***************************************************/ 
-					nbr_intf_SDN_ptr, PRGC_VECTOR_INSERT_POS_TAIL);
-					
-			
-					
-					
+				prg_vector_insert (hello_msg_data_ptr->nbr_intf_addr_vptr, 
+					nbr_intf_addr_ptr, PRGC_VECTOR_INSERT_POS_TAIL);
 				
 				/* Model the size of the Interface Address inserted in Hello Msg */
 				/* Neighbor Interface Address (32) = 32	bits for IPv4 OLSR.	     */
 				/* Neighbor Interface Address (128) = 128 bits for IPv6 OLSR	 */
 				olsr_hello_message_size += (is_ipv6_enabled? 128:32); 
-				
-				
-				
-				olsr_hello_message_size +=64;/***************************************************/					
-										
 				
 				hello_msg_data_ptr->linkcode = linkcode;
 				hello_msg_data_ptr->reserved = 8;
@@ -2294,7 +1837,6 @@ printf("\n%g the valeur ",ptr->stabilite.SDN);
 			else
 				{
 				int*						nbr_intf_addr_ptr;
-				double*						nbr_intf_SDN_ptr;/***************************************************/
 				
 				/* Either of conditions is true:				*/
 				/* (1) same linkcode as previous one OR			*/
@@ -2308,23 +1850,10 @@ printf("\n%g the valeur ",ptr->stabilite.SDN);
 			
 				/* Create inet address pointer to insert in the vector */
 				nbr_intf_addr_ptr = olsr_rte_address_create (nbr_intf_addr);
-				nbr_intf_SDN_ptr=get_SDN( nbr_intf_addr);
-				
-				
-	//			printf("\n%g DreamWAver ",nbr_intf_SDN_ptr);
-	//			printf("\n%f DreamWAver ",nbr_intf_SDN_ptr);
-		//		printf("\n%g DreamWAver ",*nbr_intf_SDN_ptr);
-	///			printf("\n%g DreamWAver ",&nbr_intf_SDN_ptr);
-//				nbr_intf_SDN_ptr= get_SDN(neighbor_main_addr);/***************************************************/
 		
 				/* Add to the exisiting intf vector (list) */
 				prg_vector_insert (hello_msg_data_ptr->nbr_intf_addr_vptr, 
 					nbr_intf_addr_ptr, PRGC_VECTOR_INSERT_POS_TAIL);
-				
-				prg_vector_insert (hello_msg_data_ptr->nbr_intf_SDN_vptr, 
-					nbr_intf_SDN_ptr, PRGC_VECTOR_INSERT_POS_TAIL);/***************************************************/
-				
-				
 			
 				hello_msg_data_ptr->link_msg_size = prg_vector_size (nbr_intf_addr_vptr);
 			
@@ -2332,9 +1861,6 @@ printf("\n%g the valeur ",ptr->stabilite.SDN);
 				/* Neighbor Interface Address (32) = 32	bits for IPv4 OLSR.	     */
 				/* Neighbor Interface Address (128) = 128 bits for IPv6 OLSR	 */
 				olsr_hello_message_size += (is_ipv6_enabled? 128:32); 
-				olsr_hello_message_size +=64;/***************************************************/
-				olsr_hello_message_size +=32;  /*set energie  --Lyes*/
-				
 				}
 	
 			prev_linkcode = linkcode;
@@ -2347,16 +1873,6 @@ printf("\n%g the valeur ",ptr->stabilite.SDN);
 		hello_msg_ptr->willingness = node_willingness;
 		hello_msg_ptr->hello_msg_vptr = hello_msg_vptr;
 		
-		
-		
-		
-		/////////////////////////////**************************************************
-		
-		hello_msg_ptr->res_energy = get_energy();
-		
-		
-		//////////////////////
-
 		/* Add this hello message in OLSR Message */
 		olsr_msg_ptr = olsr_pkt_support_olsr_message_create (hello_msg_ptr, originator_addr, 
 			olsr_hello_message_size , msg_seq_num++, OLSRC_HELLO_MESSAGE, neighbor_hold_time, 1, 0, 
@@ -2377,9 +1893,6 @@ printf("\n%g the valeur ",ptr->stabilite.SDN);
 		hello_msg_ptr->htime = OLSRC_HELLO_EMISSION_INTERVAL;
 		hello_msg_ptr->willingness = node_willingness;
 		hello_msg_ptr->hello_msg_vptr = OPC_NIL; /* No hello msg data */
-		
-		
-		hello_msg_ptr->res_energy = get_energy();		
 		
 		/* Create OLSR message */
 		olsr_msg_ptr = olsr_pkt_support_olsr_message_create (hello_msg_ptr, originator_addr, 
@@ -2458,18 +1971,9 @@ olsr_rte_send_TC (Boolean send_jittered)
 	List*							keys_lptr;
 	int*							mprs_addr_ptr;
 	int								olsr_tc_message_size = 0;
-	double*                         mpr_nodes_SDN_ptr;///////////////////////////////////////////////////////////////////////////
-	
 	
 	FIN (olsr_rte_send_TC (Boolean));
-	if(get_energy()< 1000    )   { FOUT ;}
-	
-	
-	
-	update_energy();
 
-	
-	
 	
 	/* Remove the expired mpr_selector entries, lazy method */
 	olsr_rte_expired_mpr_selector_set_entries_remove ();
@@ -2512,20 +2016,13 @@ olsr_rte_send_TC (Boolean send_jittered)
 			{
 			/* Add each mpr selector address in this new TC message */
 			mpr_selector_entry_ptr = (OlsrT_MPR_Selector_Set_Entry*) prg_list_access (keys_lptr, i);
-			
 			mprs_addr_ptr = olsr_rte_address_create (mpr_selector_entry_ptr->mpr_selector_ptr->nbr_addr);
-
-			mpr_nodes_SDN_ptr=get_SDN(mpr_selector_entry_ptr->mpr_selector_ptr->nbr_addr);/////////////////////////////add to each mprs selector the SDN in a new list////////////////////////////////////////////////////
-			
 			prg_vector_insert (tc_msg_ptr->mpr_nodes_vptr, mprs_addr_ptr, PRGC_VECTOR_INSERT_POS_TAIL);
-			prg_vector_insert (tc_msg_ptr->mpr_nodes_SDN_vptr, mpr_nodes_SDN_ptr, PRGC_VECTOR_INSERT_POS_TAIL);
 			
 			/* Model the size of the Interface Address inserted in Hello Msg */
 			/* Advertised Neighbor Main Address (32) = 32 bits for Ipv4		 */
 			/* Advertised Neighbor Main Address (128) = 128 bits for Ipv6	 */
 			olsr_tc_message_size += (is_ipv6_enabled? 128:32);
-			olsr_tc_message_size += 64;         /////////allocate memory for SDN /////////
-			
 			}
 		
 		/* Add this tc message in OLSR Message */
@@ -2536,11 +2033,11 @@ olsr_rte_send_TC (Boolean send_jittered)
 		/* Create olsr pkt by adding pkt_len and pkt_seq_num to this olsr_msg */
 		olsr_pkptr = olsr_pkt_support_pkt_create (olsr_msg_ptr, pkt_seq_num++);
 		
-		if ((LTRACE_ACTIVE) || (op_prg_odb_ltrace_active ("adesai")))
+		if (LTRACE_ACTIVE)
 			{
 			op_prg_odb_print_major (pid_string, "Broadcasting new TC message \n", OPC_NIL);
-;			/* To print the TC Message which is going out, uncomment the following line 	*/
-			olsr_rte_olsr_message_print ((void*) olsr_msg_ptr, OPC_NIL);	
+			/* To print the TC Message which is going out, uncomment the following line 	*/
+			//olsr_rte_olsr_message_print ((void*) olsr_msg_ptr, OPC_NIL);	
 			}
 	
 		/* Update the send_empty_tc_time for emptry TC mesg transmission check 	*/
@@ -2575,7 +2072,6 @@ olsr_rte_pkt_send (Packet* pkptr, InetT_Address PRG_ARG_UNUSED (dest_addr), Bool
 	double 			delay;
 	
 	FIN (olsr_rte_pkt_send (<args>));
-	if(get_energy()< 1000   )   { update_energy() ; FOUT ;}/*************************************************************************************/
 
 	/* Update the statistics for the routing traffic sent	*/
 	olsr_support_routing_traffic_sent_stats_update (&local_stat_handles, &global_stat_handles, pkptr);
@@ -2614,12 +2110,13 @@ olsr_rte_forward_packet (OlsrT_Message* olsr_message_ptr, int ip_src_addr)
 	
 	int 							nbr_main_addr;
 	OlsrT_MPR_Selector_Set_Entry*	mprs_entry_ptr = OPC_NIL;
-		
 	FIN (olsr_rte_forward_packet (OlsrT_Message*, int));
-
 	
 	/* Get the main address of this nbr from which we received this TC */
 	nbr_main_addr = olsr_support_main_addr_get (ip_src_addr);
+	
+	
+	
 	
 	/* Check if this node is in my MPR selector list */
 	if ((mprs_entry_ptr = (OlsrT_MPR_Selector_Set_Entry*) prg_bin_hash_table_item_get
@@ -2915,13 +2412,11 @@ olsr_rte_calculate_mpr_set (void)
 	/* Calculates MPRs for this node  */
 	/* and fills up the MPR set table */
 	int 	num_strict_two_hops = 0;
-	int				num_keys, i, willingness, degree, reachability,top_Energie;
-	double			fs;
-	int			Conf,nombre_2_saut;
+	int				num_keys, i, willingness, degree, reachability;
 	OlsrT_Neighbor_Set_Entry*	mpr_candidate_ptr = OPC_NIL;
 	OlsrT_Neighbor_Set_Entry*	nbr_set_entry_ptr = OPC_NIL;
 	List*						keys_lptr = OPC_NIL;
-
+		
 	FIN (olsr_rte_calculate_mpr_set (void));
 	
 	/* Update the OLSR Performance. MPR Calcs statistics */
@@ -2935,60 +2430,30 @@ olsr_rte_calculate_mpr_set (void)
 	/* Make a list of strict 2 hop neighbors as the two hop	*/
 	/* nbr table can have neighbor and 2 hop neighbors		*/
 	num_strict_two_hops = olsr_rte_strict_two_hop_set_create ();
-	nombre_2_saut=num_strict_two_hops;
-	/* 1-) Commencer par un ensemle de MPR vide*/
 
-	/* 2-) Calculer le degree D(y) pour chaque entree dans le voisinage */
+	/* Calculate degree D(y) for each entry in nbr set */
 	olsr_rte_calculate_degree ();
-
-	/* 3-)Calculer la fidélité F(y) de chaque nœud dans N(x).f(y) est le nombre de jetons*/
-	olsr_rte_calculate_FdN();
-	
 
 	/* Find all two hop nbrs that are reachable through */
 	/* only one neighbor. Mark that neighbor as MPR 	*/
-	
-	/* 4-) Choisir les nœuds de l'ensemble des voisins N(x) qui sont les seuls
-	ayant un lien avec un voisin du second niveau. Ajouter ces nœuds sélectionnés 
-	de N(x)	à l'ensemble MPRset (x), et éliminer tous les
-	nœuds du second niveau couverts par ces derniers de l'ensemble N2(x).*/
 	olsr_rte_mpr_with_nbr_count_one_add (&num_strict_two_hops);
 	
-	
-	
 	keys_lptr = (List*) prg_bin_hash_table_item_list_get (neighbor_set_table);
-	num_keys = op_prg_list_size (keys_lptr); 
+	num_keys = op_prg_list_size (keys_lptr);
 
-	/* 5-) Tantque N2(x) n'est pas vide refire:*/
+	/* For each 2 hop neighbor that can be reached by */
+	/* only one neighbor, add that neighbor as mpr	  */
 	while (num_strict_two_hops > 0)
 		{		
 	
-		
-	/* 5.a-) Calculer rechabilité R(y) pour chaque entree dans le voisinage*/
 		olsr_rte_calculate_reachability (keys_lptr);
 		/* Initialize the values for the key attributes */
-		top_Energie=-1;
-		Conf=-1;
 		willingness = -1;
 		reachability = -20;
 		degree = -1;
-		fs=2.1987;
 		mpr_candidate_ptr = OPC_NIL;
 			
-//		
-		
-/*	if(own_main_address==3)
-		{
-		printf("\nAlgorithme de Selection des MPR de neoud N°%d qui a %d/%d voisins de 2 saut:",own_main_address,num_strict_two_hops,nombre_2_saut);
-		print_addr(own_main_address);
-		printf("\n===================================================================================================");
-		printf("\n Neighbor    Willingness      Reachability     Degree     Stabilite          Fidélité		Energie");
-		printf("\n===================================================================================================");
-	//printf("\n Default         %d               %d            %d          %g	          %d	   %d",willingness,reachability,degree,fs,Conf,lyasEnergie);
-		//printf("\n___________________________________________________________________________________________________");
-		}
-		
-*/		for (i=0; i< num_keys; i++)
+		for (i=0; i< num_keys; i++)
 			{
 			/* For each entry value in neighbor table	*/
 			nbr_set_entry_ptr = (OlsrT_Neighbor_Set_Entry*) op_prg_list_access (keys_lptr, i);
@@ -3003,76 +2468,29 @@ olsr_rte_calculate_mpr_set (void)
 				/* Do nothing,go to next neighbor entry	*/
 				continue;
 				}
-
-/*			if(own_main_address==3)
-				{
-			printf("\n");
-			print_addr(nbr_set_entry_ptr->nbr_addr);
-			
-			printf("      %2d                %2d           %2d            %g	    %d/%d",nbr_set_entry_ptr->willingness,nbr_set_entry_ptr->reachability,nbr_set_entry_ptr->degree,nbr_set_entry_ptr->stabilite.SDN,nbr_set_entry_ptr->conf,nbr_set_entry_ptr->degree);
-			printf("\n___________________________________________________________________________________________________");
-			}
-/*
-	/* 5-b) Ajouter le nœud (y) de N(x), ayant F(y) maximal à l'ensemble des MPRset (x),
-		Si les valeurs sont les mêmes prend le nœud qui à le plus grand degré de reachability R(y).
-		Si ces derniers sont égaux on prend alors le nœud avec le plus grand degré D(y).*/
-			
 			
 			if (nbr_set_entry_ptr->willingness > willingness)
-				{   
-						mpr_candidate_ptr = nbr_set_entry_ptr;  //tit 
-						willingness 	  = nbr_set_entry_ptr->willingness;
-						Conf			  = nbr_set_entry_ptr->conf;
-						reachability	  = nbr_set_entry_ptr->reachability;
-						degree 			  = nbr_set_entry_ptr->degree;
-						fs				  = nbr_set_entry_ptr->stabilite.SDN;
-						top_Energie		  = nbr_set_entry_ptr->energie ;
-
+				{
+				mpr_candidate_ptr = nbr_set_entry_ptr;
+				willingness = nbr_set_entry_ptr->willingness;
+				reachability = nbr_set_entry_ptr->reachability;
+				degree = nbr_set_entry_ptr->degree;
 				}
+		
 			else if ( (nbr_set_entry_ptr->willingness == willingness) &&
-					  (nbr_set_entry_ptr->conf		   > 		Conf))
-					{
-						mpr_candidate_ptr = nbr_set_entry_ptr;
-						top_Energie		  =	nbr_set_entry_ptr->energie;
-						Conf			  =	nbr_set_entry_ptr->conf;
-						reachability 	  =	nbr_set_entry_ptr->reachability;
-						degree 			  =	nbr_set_entry_ptr->degree;
-						fs				  =	nbr_set_entry_ptr->stabilite.SDN;
-					}
-			
-			else if ( (nbr_set_entry_ptr->willingness == willingness) &&
-				      (nbr_set_entry_ptr->conf == Conf)&&
-					  (nbr_set_entry_ptr->energie		   > 		top_Energie))
-					{
-						mpr_candidate_ptr = nbr_set_entry_ptr;
-						Conf			  =	nbr_set_entry_ptr->conf;
-						reachability 	  =	nbr_set_entry_ptr->reachability;
-						degree 			  =	nbr_set_entry_ptr->degree;
-						fs				  =	nbr_set_entry_ptr->stabilite.SDN;
-					}
-			
-			else if ( (nbr_set_entry_ptr->willingness == willingness ) &&
-					 (nbr_set_entry_ptr->energie == top_Energie)&&
-                    (nbr_set_entry_ptr->conf 	 == Conf		 ) &&
-					  (nbr_set_entry_ptr->reachability > reachability))
-					{
-						mpr_candidate_ptr = nbr_set_entry_ptr;
-						reachability	  = nbr_set_entry_ptr->reachability;
-						degree 			  = nbr_set_entry_ptr->degree;
-						fs				  = nbr_set_entry_ptr->stabilite.SDN;
-					}
-			
-			else if ( (nbr_set_entry_ptr->willingness == willingness ) &&
-					  (nbr_set_entry_ptr->energie == top_Energie)&&
-				      (nbr_set_entry_ptr->conf 	 	  == Conf		 ) &&
-					  (nbr_set_entry_ptr->reachability == reachability) &&
-					  (nbr_set_entry_ptr->degree	   > degree		 ))
-				   {
-				   	   mpr_candidate_ptr = nbr_set_entry_ptr;
-					   degree			 = nbr_set_entry_ptr->degree;
-					   fs				 = nbr_set_entry_ptr->stabilite.SDN;
-
-				   }
+						(nbr_set_entry_ptr->reachability > reachability))
+				{
+				mpr_candidate_ptr = nbr_set_entry_ptr;
+				reachability = nbr_set_entry_ptr->reachability;
+				degree = nbr_set_entry_ptr->degree;
+				}
+			else if ((nbr_set_entry_ptr->willingness == willingness) &&
+						(nbr_set_entry_ptr->reachability == reachability) &&
+						 ((nbr_set_entry_ptr->degree) > degree))
+				{
+				mpr_candidate_ptr = nbr_set_entry_ptr;
+				degree = nbr_set_entry_ptr->degree;
+				}
 			}
 		
 		/* We are not performing NIL ptr check 	*/
@@ -3081,24 +2499,12 @@ olsr_rte_calculate_mpr_set (void)
 		/* nodes in strict two hop nbr list		*/
 		
 		/* Mark this best candiate for MPR */
-		
-		
-		
-//		printf("\n%    d             %d             %d           %d",mpr_candidate_ptr->nbr_addr,mpr_candidate_ptr->willingness,mpr_candidate_ptr->reachability,mpr_candidate_ptr->degree);
-		
 		mpr_candidate_ptr->reachability = OLSRC_VALUE_MPR;
-//		printf("\nnouvelle entree      %d             %d           %d            %g	%d",mpr_candidate_ptr->willingness,mpr_candidate_ptr->reachability,mpr_candidate_ptr->degree,mpr_candidate_ptr->stabilite.SDN,mpr_candidate_ptr->conf);			
-//			print_addr(mpr_candidate_ptr->nbr_addr);
-					
 		
 		/* Delete all those two hop nodes which are covered by */
 		/* this MPR from the strict two hop list */
-		
-
-		/* Enlever tous les nœuds du second niveau couverts par ce nœud de l’ensemble N2(x).*/
 		olsr_rte_update_strict_two_hop_set (&num_strict_two_hops, mpr_candidate_ptr);
-		} /*Fin Tantque*/
-
+		} /*end while*/
 	
 	prg_list_destroy (keys_lptr, OPC_FALSE);
 	
@@ -3110,7 +2516,6 @@ olsr_rte_calculate_mpr_set (void)
 	/* have different level of WILLINGNESS			*/
 	/* Extra optimization currently not implemented.*/
 	
-	/*Ajouter ce noeud au mpr liste*/
 	olsr_rte_build_new_mpr_set ();
 	
 	/* Note: Here we are not doing an explicit check */
@@ -3119,14 +2524,7 @@ olsr_rte_calculate_mpr_set (void)
 	/* out an Hello message to notify the changes. 	*/
 	/* We will wait for next scheduled hello rather	*/
 	/* than explicit hello message. Lazy method. 	*/
-	
-/*	if(own_main_address==3)
-	{
-	olsr_rte_mpr_set_print_to_stringara();
-	olsr_rte_neighbor_set_print_to_string();
-    olsr_rte_two_hop_neighbor_set_print_to_string ();
-	}*/
-	
+			
 	FOUT;
 	}
 
@@ -3167,16 +2565,13 @@ static void olsr_rte_calculate_degree (void)
 			
 			if (two_hop_addr_ptr->strict_two_hop == OPC_TRUE || (nbr_set_entry_ptr->status != OLSRC_SYM_STATUS))
 			    {
-			    nbr_set_entry_ptr->degree++;			
+			    nbr_set_entry_ptr->degree++;
 			    }
 			}
-	//	printf("\nAra:Degree of this noeud %d is %d",nbr_set_entry_ptr->nbr_addr,nbr_set_entry_ptr->degree);
 		}
 	
 	/* Destory the list, but do not free the values */
 	prg_list_destroy (keys_lptr, OPC_FALSE);
-	
-	
 	
 	FOUT;
 	
@@ -3194,11 +2589,14 @@ olsr_rte_build_new_mpr_set (void)
 	OlsrT_Neighbor_Set_Entry*			nbr_set_entry_ptr = OPC_NIL;
 	OlsrT_MPR_Set_Entry*				mpr_entry_ptr = OPC_NIL;
 	
+	
+	
 	FIN (olsr_rte_build_new_mpr_set (void));
 	
 	/* Delete all entries from the mpr set */
 	m_keys_lptr = (List*) prg_bin_hash_table_item_list_get (mpr_set_table);
 	num_keys = op_prg_list_size (m_keys_lptr);
+	
 	
 	for (i=0; i< num_keys; i++)
 		{
@@ -3238,11 +2636,14 @@ olsr_rte_build_new_mpr_set (void)
 	}
 
 
+//*****************************************************************************************************************************
+
 static OlsrT_MPR_Set_Entry*
 olsr_rte_mpr_set_entry_create (int mpr_addr)
 	{
 	OlsrT_MPR_Set_Entry* 		mpr_set_entry_ptr = OPC_NIL;
 	void*						old_contents_ptr;
+		
 	
 	FIN (olsr_rte_mpr_set_entry_create (int));
 	
@@ -3254,7 +2655,7 @@ olsr_rte_mpr_set_entry_create (int mpr_addr)
 	/* address in the mpr set table					*/
 	prg_bin_hash_table_item_insert 
 		(mpr_set_table, &mpr_addr, mpr_set_entry_ptr, &old_contents_ptr);
-
+		
 	FRET (mpr_set_entry_ptr);
 	
 	}
@@ -3373,7 +2774,7 @@ olsr_rte_mpr_with_nbr_count_one_add (int *num_strict_two_hops)
 		if (two_hop_nbr_entry_ptr->strict_two_hop == OPC_FALSE)
 		         continue;
 		
-		if (1==2)  //(two_hop_nbr_entry_ptr->neighbor_list.size == 1)
+		if (op_prg_list_size (&two_hop_nbr_entry_ptr->neighbor_list) == 1)
 			{
 			/* This two hop nbr can only be reached through		*/
 			/* one SYM nbr, mark that neighbor as MPR 			*/
@@ -3409,7 +2810,7 @@ olsr_rte_mpr_with_nbr_count_one_add (int *num_strict_two_hops)
 			if ((*num_strict_two_hops) == 0)
 				break;
 			
-			}/*end if (two_hop_nbr_entry_ptr->neighbor_list.size == 1)*/
+			}/*end if (op_prg_list_size (&two_hop_nbr_entry_ptr->neighbor_list) == 1)*/
 		}/*end for*/
 	
 	prg_list_destroy (keys_lptr, OPC_FALSE);
@@ -3675,7 +3076,7 @@ olsr_rte_symmetric_link_expiry_handle (void* v_link_set_entry_ptr, int code)
 		neighborhood_changed = OPC_TRUE;
 			
 		/* Update the OLSR Performance. 1-hop Nbr delete statistics */
-		//op_stat_write (global_stat_handles.nbr_delete_global_shandle, 1.0);
+		op_stat_write (global_stat_handles.nbr_delete_global_shandle, 1.0);
 			
 		/* If this function was called while processing LOST_LINK 	*/
 		/* information in hello, do not perform nbrhood_topology	*/
@@ -4043,7 +3444,7 @@ olsr_rte_set_neighbor_status (int nbr_addr, OlsrT_Link_Set_Entry* link_set_entry
 		olsr_rte_graph_nbr_delete (nbr_set_entry_ptr);
 
 		/* Update the OLSR Performance. 1-hop Nbr delete statistics */
-		//op_stat_write (global_stat_handles.nbr_delete_global_shandle, 1.0);
+		op_stat_write (global_stat_handles.nbr_delete_global_shandle, 1.0);
 				
 		two_hop_addr_num = op_prg_list_size (&nbr_set_entry_ptr->two_hop_nbr_list);
 			
@@ -4088,7 +3489,7 @@ olsr_rte_neighbor_set_entry_get (int nbr_addr)
 	}
 
 static OlsrT_Neighbor_Set_Entry*
-olsr_rte_neighbor_set_entry_create (int nbr_addr, int status, int will, int energ)
+olsr_rte_neighbor_set_entry_create (int nbr_addr, int status, int will)
 	{
 	/* Adds an entry to the link set */
 	OlsrT_Neighbor_Set_Entry* 		nbr_set_entry_ptr = OPC_NIL;
@@ -4109,23 +3510,10 @@ olsr_rte_neighbor_set_entry_create (int nbr_addr, int status, int will, int ener
 	nbr_set_entry_ptr->reachability = OLSRC_VALUE_CLEAR;
 	nbr_set_entry_ptr->mpr_selector = OPC_FALSE;
 	
-/**************************************************************/
-	nbr_set_entry_ptr->stabilite.SDN=0.0;
-	nbr_set_entry_ptr->val_signal.nbr_msg_recevu=0;
-	nbr_set_entry_ptr->conf=0;
-	nbr_set_entry_ptr->val_signal.temps1=op_sim_time();
-    nbr_set_entry_ptr->val_signal.temps2=op_sim_time();
-	
-	
-	
-/**************************************************************/
-	nbr_set_entry_ptr->energie=energ;
-	/**/
-	
 	/* Set the link set entry for this local interface 	*/
 	/* address in the link set table					*/
 	prg_bin_hash_table_item_insert
-		(neighbor_set_table, &nbr_addr, nbr_set_entry_ptr,&old_contents_ptr);
+		(neighbor_set_table, &nbr_addr, nbr_set_entry_ptr, &old_contents_ptr);
 	
 	FRET (nbr_set_entry_ptr);
 	}
@@ -4169,7 +3557,7 @@ olsr_rte_update_neighbor_set_table (int two_hop_addr, OlsrT_Neighbor_Set_Entry* 
 /*************************************/
 
 static void
-olsr_rte_two_hop_nbr_set_entry_create (int two_hop_addr, int nbr_addr,double SDN ,int vtime)
+olsr_rte_two_hop_nbr_set_entry_create (int two_hop_addr, int nbr_addr, int vtime)
 	{
 	/* This function first checks if an entry already exisits,	*/
 	/* if yes, then changes the expiry time, else creates a new	*/
@@ -4182,10 +3570,6 @@ olsr_rte_two_hop_nbr_set_entry_create (int two_hop_addr, int nbr_addr,double SDN
 	
 	FIN (olsr_rte_two_hop_nbr_set_entry_create (int, int, int));
 		
-	
-	
-	
-	
 	/* Get the entry for this nbr_addr	*/
 	two_hop_entry_ptr = (OlsrT_Two_Hop_Neighbor_Set_Entry*) 
 		prg_bin_hash_table_item_get (two_hop_nbr_set_table, &(two_hop_addr));
@@ -4207,21 +3591,20 @@ olsr_rte_two_hop_nbr_set_entry_create (int two_hop_addr, int nbr_addr,double SDN
 			/* Schedule the interrupt for sym link expiry */
 			nbr_addr_entry_ptr->two_hop_expiry_evhandle = op_intrpt_schedule_call (op_sim_time () + vtime, 
 				OLSRC_TWO_HOP_EXPIRY, olsr_rte_two_hop_expiry_handle, nbr_addr_entry_ptr);
-			
-			
-			nbr_addr_entry_ptr->SDN=SDN;
-//		printf("\ntwo ops SDN %g",nbr_addr_entry_ptr->SDN);
-			
+		
 			/* return, no two hop neighborhood change */
 			FOUT;
 			}
+		/* If no neighbor entry is found here, one will be created later in this function.					*/
+		/* So add a link between the neighbor and the corresponding 2-hop neighbor at this point.			*/	
+		else
+			olsr_rte_graph_two_hop_nbr_add (nbr_addr, two_hop_entry_ptr);
 		}
 	else
 		{
 		/* Create new entry. Allocate memory for the two hop nbr set entry	*/
 		two_hop_entry_ptr = (OlsrT_Two_Hop_Neighbor_Set_Entry*) op_prg_pmo_alloc (two_nbr_set_entry_pmh);
 		two_hop_entry_ptr->two_hop_addr = two_hop_addr;
-		two_hop_entry_ptr->SDN=SDN;
 		two_hop_entry_ptr->neighbor_hash_ptr = prg_bin_hash_table_create (4, 4);
 		
 		olsrc_created_new = OPC_TRUE;
@@ -4261,7 +3644,6 @@ olsr_rte_two_hop_nbr_set_entry_create (int two_hop_addr, int nbr_addr,double SDN
 	
 	nbr_addr_entry_ptr->nbr_ptr = nbr_set_entry_ptr;
 	nbr_addr_entry_ptr->two_hop_addr = two_hop_addr;
-	nbr_addr_entry_ptr->SDN=SDN;
 
 	/* Schedule the expiry interrupt for this two hop entry */
 	nbr_addr_entry_ptr->two_hop_expiry_evhandle = op_intrpt_schedule_call (op_sim_time () + vtime,
@@ -4357,7 +3739,7 @@ olsr_rte_remove_nbr_from_two_hop_entry (int nbr_addr, OlsrT_Two_Hop_Neighbor_Set
 			op_prg_mem_free (nbr_addr_entry_ptr);
 
 			/* see if neighbor list became empty */
-			if (1==2) //(two_hop_set_entry_ptr->neighbor_list.size == 0)
+			if (op_prg_list_size (&two_hop_set_entry_ptr->neighbor_list) == 0)
 				{
 				/* No element in this vector i.e. this 	*/
 				/* 2 hop neighbor cannot be reached 	*/
@@ -4434,7 +3816,7 @@ olsr_rte_two_hop_expiry_handle (void* ptr1, int PRG_ARG_UNUSED (code))
 		}
 							
 	/* Before moving on to next entry, check if this entry is still valid */
-	if (1==2)//(two_hop_entry_ptr->neighbor_list.size == 0)
+	if (op_prg_list_size (&two_hop_entry_ptr->neighbor_list) == 0)
 		{
 		if (LTRACE_ACTIVE)
 			{
@@ -4512,7 +3894,7 @@ olsr_rte_two_hop_nbr_set_entry_match_n_delete (int two_hop_addr, int nbr_addr)
 				op_stat_write (global_stat_handles.two_hop_reachability_del_global_shandle, 1.0);
 				}
 			
-			if (1==2)//(two_hop_entry_ptr->neighbor_list.size == 0)
+			if (op_prg_list_size (&two_hop_entry_ptr->neighbor_list) == 0)
 				{
 				if ((op_prg_odb_ltrace_active ("trace_hello") == OPC_TRUE))
 					{
@@ -4544,14 +3926,13 @@ olsr_rte_two_hop_nbr_set_entry_match_n_delete (int two_hop_addr, int nbr_addr)
 /*********************************/
 	
 static OlsrT_TC_Dest_Addr_Entry*
-olsr_rte_tc_dest_addr_entry_create (PrgT_Vector* mprs_addr_vptr, int rcvd_seq_num, PrgT_Vector* SDN_vptr)///////////////// add the vector of SDN to the toplogy /////////////////////////////
+olsr_rte_tc_dest_addr_entry_create (PrgT_Vector* mprs_addr_vptr, int rcvd_seq_num)
 	{
 	/* Creates TC Addr Entry */
 	OlsrT_TC_Dest_Addr_Entry*		dest_addr_entry_ptr;
 	int								i, num_size;
 	int*							dest_addr_ptr;
 	int*							mprs_addr_ptr;
-	double*                         SDN_ptr;
 		
 	FIN (olsr_rte_tc_dest_addr_entry_create (<args>));
 		
@@ -4563,14 +3944,10 @@ olsr_rte_tc_dest_addr_entry_create (PrgT_Vector* mprs_addr_vptr, int rcvd_seq_nu
 	
 	for (i=0; i< num_size; i++)
 		{
-		
-		
 		mprs_addr_ptr = (int*) prg_vector_access (mprs_addr_vptr, i);
-		SDN_ptr=  (double *) prg_vector_access (SDN_vptr, i);
-		
 		dest_addr_ptr = olsr_rte_address_create (*mprs_addr_ptr);
-		op_prg_list_insert (&dest_addr_entry_ptr->dest_addr_list,dest_addr_ptr, PRGC_LISTPOS_TAIL);
-		op_prg_list_insert (&dest_addr_entry_ptr->SDN_list,SDN_ptr, PRGC_LISTPOS_TAIL);/////////////////////////////////////////////
+		op_prg_list_insert (&dest_addr_entry_ptr->dest_addr_list,
+			dest_addr_ptr, PRGC_LISTPOS_TAIL);
 		}
 	
 	dest_addr_entry_ptr->tc_seq_num = rcvd_seq_num;
@@ -4591,7 +3968,6 @@ olsr_rte_tc_dest_addr_entry_destroy (void* entry)
 	/* Go through each element of the list and destroy the dest_addr */
 	dest_addr_entry_ptr = (OlsrT_TC_Dest_Addr_Entry*) entry;
 	op_prg_list_free (&dest_addr_entry_ptr->dest_addr_list);
-	op_prg_list_free (&dest_addr_entry_ptr->SDN_list);   //////////////////// destroy the list of SDN ///////////////////////////////////
 	op_prg_mem_free (dest_addr_entry_ptr);
 	
 	FOUT;
@@ -4635,7 +4011,8 @@ olsr_rte_expired_tc_entries_remove (void)
 
 			olsr_rte_graph_tc_delete (tc_entry_ptr);
 
-			tmp_var = oms_topo_table_item_remove (topo_table_hndl, tc_entry_ptr->last_addr, tc_entry_ptr->tc_seq_num);
+			tmp_var = oms_topo_table_item_remove (topo_table_hndl, 
+				tc_entry_ptr->last_addr, tc_entry_ptr->tc_seq_num);
 
 			prg_bin_hash_table_item_remove (tc_set_table, &(tc_entry_ptr->last_addr));
 			op_prg_mem_free (tc_entry_ptr);
@@ -4756,8 +4133,7 @@ olsr_pkt_support_tc_message_create (void)
 	/* Create an empty vector for the mpr selector addresses */
 	/* to be carried by this TC message */
 	tc_msg_ptr->mpr_nodes_vptr = prg_vector_create (1, OPC_NIL, OPC_NIL);
-	tc_msg_ptr->mpr_nodes_SDN_vptr = prg_vector_create (1, OPC_NIL, OPC_NIL);//////////////////// Create an empty vector for the SDN ///////////////////////////
-		 
+		
 	FRET (tc_msg_ptr);
 	}
 
@@ -4869,10 +4245,8 @@ olsr_rte_olsr_message_destroy (void* message_ptr)
 	OlsrT_TC_Message*			tc_msg_ptr;
 	int 						hello_msg_data_num;
 	PrgT_Vector*				intf_addr_vptr;
-	PrgT_Vector*				intf_SDN_vptr;/*******************************************/
 	int							intf_addr_num;
 	int*						intf_addr_ptr;
-	double*						intf_SDN_ptr;
 	int							i,j;
 			
     /*  Deallocate the packet structure memory.     */
@@ -4907,20 +4281,17 @@ olsr_rte_olsr_message_destroy (void* message_ptr)
 							prg_vector_remove (hello_msg_data_vptr, i);
 						
 						intf_addr_vptr = (PrgT_Vector*) hello_msg_data_ptr->nbr_intf_addr_vptr;
-						intf_SDN_vptr = (PrgT_Vector*) hello_msg_data_ptr->nbr_intf_SDN_vptr;
 						intf_addr_num = prg_vector_size (intf_addr_vptr);
 				
 						for (j=intf_addr_num -1; j>=0; j--)
 							{
 							/* Destroy each address in the intf_addr vector */
 							intf_addr_ptr = (int*) prg_vector_remove (intf_addr_vptr, j);
-							intf_SDN_ptr = (double*) prg_vector_remove (intf_SDN_vptr, j);
 							op_prg_mem_free (intf_addr_ptr);
 							}
 						
 						/* Free this vector and hello_msg_data */
 						prg_vector_destroy (intf_addr_vptr, OPC_FALSE); 
-						prg_vector_destroy (intf_SDN_vptr, OPC_FALSE);
 						op_prg_mem_free (hello_msg_data_ptr);
 						}
 				
@@ -4937,14 +4308,12 @@ olsr_rte_olsr_message_destroy (void* message_ptr)
 				if (tc_msg_ptr != OPC_NIL)
 					{
 					intf_addr_vptr = (PrgT_Vector*) tc_msg_ptr->mpr_nodes_vptr;
-					intf_SDN_vptr = (PrgT_Vector*) tc_msg_ptr->mpr_nodes_SDN_vptr;/////////////////////////////////////
 					intf_addr_num = prg_vector_size (intf_addr_vptr);
 					/* Go through each intf_addr from the TAIL */
 					for (i= intf_addr_num -1; i >= 0; i--)
 						{
 						/* Destroy each address in the intf_addr vector */
 						intf_addr_ptr = (int*) prg_vector_remove (intf_addr_vptr, i);
-						intf_SDN_ptr =  (double*) prg_vector_remove (intf_SDN_vptr, i);////////////// Destroy each SDN in the SDN vector/////////////////
 						op_prg_mem_free (intf_addr_ptr);
 						}
 					/* Free this vector and TC message */
@@ -4998,20 +4367,6 @@ olsr_rte_address_create (int addr)
 	*new_addr_ptr = addr;
    
     FRET (new_addr_ptr);
-    }
-
-static double*
-olsr_rte_sdn_create (double sdn)
-    {
-    double*                new_SDN_ptr;
-   
-    FIN (olsr_rte_sdn_create (double));
-     
-    /* Allocate the duplicate set entry from the pooled memory  */
-    new_SDN_ptr = (double*) op_prg_pmo_alloc (sdn_pmh);
-	*new_SDN_ptr = sdn;
-   
-    FRET (new_SDN_ptr);
     }
 
 /************************************************/
@@ -5073,8 +4428,6 @@ olsr_rte_olsr_message_print (void* message_ptr, Prg_List* PRG_ARG_UNUSED (output
 	
 			printf("Hello Message Header Info \n");
 			printf("Htime: %d	Willingness:%d		", htime, willingness);
-			
-			energy_voisin = hello_msg_ptr->res_energy ;
 		
 			/* Get the list of hello msg data with different linkcodes */
 			hello_msg_data_vptr = (PrgT_Vector*) hello_msg_ptr->hello_msg_vptr;
@@ -5105,6 +4458,7 @@ olsr_rte_olsr_message_print (void* message_ptr, Prg_List* PRG_ARG_UNUSED (output
 		
 					/* Get the number of interface address */
 					intf_addr_num = prg_vector_size (intf_addr_vptr);
+					
 		
 					printf ("Hello Msg Data [%d]	LinkCode:%d\n", i, linkcode);
 					printf("Intf Addresses: ");
@@ -5224,9 +4578,6 @@ olsr_rte_neighbor_set_print_to_string (void)
 	char						will_str[128];
 	char						nbr_str [256];
 	InetT_Address				inet_nbr_addr;
-	double						fs;
-	int							msgs;
-	int							conf;
 		
 	/** Prints the Neighbor Set Table maintained at this node	**/
 	FIN (olsr_rte_neighbor_set_print_to_string (void));
@@ -5234,9 +4585,6 @@ olsr_rte_neighbor_set_print_to_string (void)
 	/* Get the number of entries in the link set	*/
 	keys_lptr = (List*) prg_bin_hash_table_item_list_get (neighbor_set_table);
 	num_routes = op_prg_list_size (keys_lptr);
-		printf("\n I am the noeud %d",own_main_address);
-	print_addr(own_main_address);
-	printf("\n");
 	
 	if(num_routes == 0)
 		{
@@ -5250,8 +4598,8 @@ olsr_rte_neighbor_set_print_to_string (void)
 		printf("=====================================================================\n");
 		printf("-                  NEIGHBOR SET                                      \n");
 		printf("=====================================================================\n");
-		printf("Neighbor Addr.	  Status	    Willingness   nbr msg  Stabilite	Conf\n");
-		printf("--------------	------------	------------  -------- ------------\n");
+		printf("Neighbor Addr.	  Status	Willingness	\n");
+		printf("--------------	------------	------------ \n");
 		
 		for (count = 0; count < num_routes; count++)
 		{
@@ -5283,18 +4631,10 @@ olsr_rte_neighbor_set_print_to_string (void)
 			else if (nbr_set_entry_ptr->willingness == OLSRC_WILL_ALWAYS)
 				sprintf(will_str, "WILL ALWAYS");
 			
-			
 			inet_nbr_addr = inet_rtab_index_to_addr_convert (nbr_set_entry_ptr->nbr_addr);
 			inet_address_print (nbr_str, inet_nbr_addr);
-			
-			/****************************************************************/
-			msgs=nbr_set_entry_ptr->val_signal.nbr_msg_recevu;
-			fs=nbr_set_entry_ptr->stabilite.SDN;
-			conf=nbr_set_entry_ptr->conf;
-		
-			/****************************************************************/			
-			
-		printf ("%s\t\t%s\t%s\t%d\t%d\t%g\t%d\n", nbr_str, status_str, will_str, op_prg_list_size (&nbr_set_entry_ptr->two_hop_nbr_list),msgs,fs,conf);
+			//printf ("%s\t%s\t%s\t%d\n", nbr_str, status_str, will_str, op_prg_list_size (&nbr_set_entry_ptr->two_hop_nbr_list));
+			printf("One %g \n",nbr_set_entry_ptr->signal_value.signal_value_table[0]);// walid
 		
 			}
 		}
@@ -5328,8 +4668,6 @@ olsr_rte_two_hop_neighbor_set_print_to_string (void)
 	keys_lptr = (List*) prg_bin_hash_table_item_list_get (two_hop_nbr_set_table);
 	num_routes = op_prg_list_size (keys_lptr);
 	
-
-	
 	if(num_routes == 0)
 		{
 		printf("=====================================================================\n");
@@ -5362,7 +4700,7 @@ olsr_rte_two_hop_neighbor_set_print_to_string (void)
 			inet_two_hop_addr = inet_rtab_index_to_addr_convert (two_hop_nbr_set_entry_ptr->two_hop_addr);
 			inet_address_print (two_hop_str, inet_two_hop_addr);
 		
-			//printf ("%s\t\t%d\t", two_hop_str,two_hop_nbr_set_entry_ptr->neighbor_list.size);
+			printf ("%s\t\t%d\t", two_hop_str, op_prg_list_size (&two_hop_nbr_set_entry_ptr->neighbor_list));
 			nbr_num = op_prg_list_size (&two_hop_nbr_set_entry_ptr->neighbor_list);
 			for (i=0; i< nbr_num; i++)
 				{
@@ -5371,7 +4709,7 @@ olsr_rte_two_hop_neighbor_set_print_to_string (void)
 				inet_nbr_addr = inet_rtab_index_to_addr_convert (nbr_addr_ptr->nbr_ptr->nbr_addr);
 				inet_address_print (nbr_addr_str, inet_nbr_addr);
 		
-				//if (!strcmp (nbr_addr_str, "192.0.1.31"))
+				if (!strcmp (nbr_addr_str, "192.0.1.31"))
 					printf ("%s\n\t\t\t\t", nbr_addr_str);
 				
 				}
@@ -5403,8 +4741,6 @@ olsr_rte_tc_set_print_to_string (void)
 	int*							dest_addr_ptr;
 	InetT_Address					inet_addr, inet_dest_addr;
 	char							addr_str [256];
-	double*                        dest_SDN_ptr;
-	double                        intf_SDN;
 	
 	/** Prints the Neighbor Set Table maintained at this node	**/
 	FIN (olsr_rte_tc_set_print_to_string (void));
@@ -5425,8 +4761,8 @@ olsr_rte_tc_set_print_to_string (void)
 		printf("=====================================================================\n");
 		printf("-              TOPOLOGY SET                                          \n");
 		printf("=====================================================================\n");
-		printf("Last Addr.	Seq Num		Exp Time	Dest Add 			SDN\n");
-		printf("----------	-------		--------	---------		-------------\n");
+		printf("Last Addr.	Seq Num		Exp Time	Dest Addr	\n");
+		printf("----------	-------		--------	---------\n");
 			   								
 		for (count = 0; count < num_routes; count++)
 		{
@@ -5457,12 +4793,10 @@ olsr_rte_tc_set_print_to_string (void)
 			for (i=0; i< dest_num; i++)
 				{
 				dest_addr_ptr = (int*) op_prg_list_access (&cmn_tc_entry_ptr->dest_addr_list, i);
-				dest_SDN_ptr = (double*) op_prg_list_access (&cmn_tc_entry_ptr->SDN_list, i);////////////////////////////////////
 				inet_dest_addr = inet_rtab_index_to_addr_convert (*dest_addr_ptr);
-				 intf_SDN=*dest_SDN_ptr;////////////////////////////////////////////////////////////////////////////////////////
 				inet_address_print (dest_addr_str, inet_dest_addr);
 				
-				printf ("%s \t\t %g\n\t\t\t\t\t\t\t", dest_addr_str,intf_SDN);
+				printf ("%s\n\t\t\t\t\t\t", dest_addr_str);
 				
 				}
 			printf ("\n");
@@ -5480,9 +4814,8 @@ olsr_rte_tc_set_print_to_string (void)
 	
 	}
 
-
 static void
-olsr_rte_mpr_set_print_to_stringara (void)
+olsr_rte_mpr_set_print_to_string (void)
 	{
 	List*					keys_lptr = OPC_NIL;
 	OlsrT_MPR_Set_Entry*	mpr_entry_ptr = OPC_NIL;
@@ -5491,8 +4824,8 @@ olsr_rte_mpr_set_print_to_stringara (void)
 	InetT_Address			inet_addr;
 
 	/** Prints the MPR Set Table maintained at this node	**/
-	FIN (olsr_rte_mpr_set_print_to_stringara (void));
-
+	FIN (olsr_rte_mpr_set_print_to_string (void));
+	
 	/* Get the number of entries in the mpr set	*/
 	keys_lptr = (List*) prg_bin_hash_table_item_list_get (mpr_set_table);
 	num_routes = op_prg_list_size (keys_lptr);
@@ -5516,7 +4849,7 @@ olsr_rte_mpr_set_print_to_stringara (void)
 			mpr_entry_ptr = (OlsrT_MPR_Set_Entry*) op_prg_list_access (keys_lptr, count);
 			inet_addr = inet_rtab_index_to_addr_convert (mpr_entry_ptr->mpr_addr);
 			inet_address_print (addr_str, inet_addr);
-			printf ("(%d)\t", mpr_entry_ptr->mpr_addr+1);
+			printf ("%s\t", addr_str);
 		
 			}
 		
@@ -5541,7 +4874,7 @@ olsr_rte_mpr_selector_set_print_to_string (void)
 	InetT_Address					inet_addr;
 
 	/** Prints the MPR Set Table maintained at this node	**/
-	FIN (olsr_rte_mpr_selector_set_print_to_string (void));
+	FIN (olsr_rte_mpr_set_print_to_string (void));
 
 	/* Get the number of entries in the mpr set	*/
 	keys_lptr = (List*) prg_bin_hash_table_item_list_get (mpr_selector_set_table);
@@ -5576,7 +4909,7 @@ olsr_rte_mpr_selector_set_print_to_string (void)
 	
 	/* Free the keys	*/
 	prg_list_destroy (keys_lptr, OPC_FALSE);
-		
+	
 	FOUT;
 	
 	}
@@ -5653,7 +4986,6 @@ olsr_rte_routing_table_print_to_string (void)
 
 			printf ("%s\t%s\t%d\t%s\n", dest_addr_str, next_addr_str, rt_entry_ptr->hops, local_addr_str);
 			}
-		
 		}
 				
 		}/* close else */
@@ -6135,7 +5467,7 @@ olsr_rte_routing_table_entry_update (OlsrT_Routing_Table_Entry* rt_entry_ptr, in
 	{
 	/* Function to update nextaddr, hops and local intf  in OLSR rte tbl */
 	FIN (olsr_rte_routing_table_entry_update (<args>));
-	op_stat_write (global_stat_handles.rte_table_calcs_global_shandle, 1.0);
+	
 	rt_entry_ptr->next_addr = new_next_addr;
 	rt_entry_ptr->hops = new_hops;
 	rt_entry_ptr->local_iface_addr = new_local_iface_addr;
@@ -6233,49 +5565,31 @@ static void
 olsr_rte_djk_rte_table_calculate (void)
 	{
 	PrgT_Vector*				edge_vector_ptr;
-	PrgT_Vector*				vertex_vector_ptr;
 	PrgT_Graph_Vertex*			vertex_ptr;
-//	PrgT_Graph_Vertex*			next_hop_vertex_ptr;
+	PrgT_Graph_Vertex*			next_hop_vertex_ptr;
 	PrgT_Graph_Edge *			next_hop_edge_ptr;
 	List*						keys_lptr;
 	InetT_Address				inet_dest_addr, inet_next_addr, inet_local_intf_addr;
-//	OlsrT_Djk_Edge_State*		edge_state_ptr;
+	
+	OlsrT_Djk_Edge_State*		edge_state_ptr;
 	OlsrT_Djk_State*			next_hop_state_ptr;
 	OlsrT_Djk_State*			dest_state_ptr;
 	int							intf_index;
 	IpT_Port_Info				port_info;
-	int							num_edges = 0,num_vertex=0,num_edge=0;
-	OlsrT_Routing_Table_Entry*	olsr_rte_entry_ptr = OPC_NIL;
+	int							num_edges = 0;
+	OlsrT_Routing_Table_Entry*			olsr_rte_entry_ptr = OPC_NIL;
 	PrgT_Bin_Hash_Table*		old_olsr_rte_table;
-	int							num_old_entries, k,m=0;
+	int							num_old_entries, k;
 	InetT_Address				old_inet_next_addr;
-	void*                       next_hops_ptr = PRGC_NIL;
-	double                      path_cost;
-	int                         num_next_hops = 0;
-	PrgT_List*                  next_hops_lptr = PRGC_NIL;
+	void* next_hops_ptr = PRGC_NIL;
+	double path_cost;
+	int num_next_hops = 0;
+	PrgT_List* next_hops_lptr = PRGC_NIL;
+	
 	PrgT_Bin_Hash_Table*		intf_set_table_ptr;
 	OlsrT_Interface_Set_Entry*	intf_set_entry_ptr;
-	int							i=0;
-//	int							index;
-//	char 						  main_addr_str[20];
-	double                       dist_edge;
-	OlsrT_Djk_State*	         my_vertex_stat;
-//	PrgT_Graph_Vertex*           min_vertex_ptr;
-	PrgT_Graph_Edge *       	 my_edge;
-	PrgT_Graph_Vertex*   	     my_vertex;
-	PrgT_Vector*                 edges_vector_ptr=PRGC_NIL;
-	PrgT_Graph_Vertex* 			 vertex_b;
-	OlsrT_Djk_Edge_State*        edges_state_ptr;
-	OlsrT_Djk_State*             state_nbr_vertex;
-    PrgT_Vector*                 all_vertex_vector_ptr=PRGC_NIL;
-	OlsrT_Djk_State*             min_vertex_stat;
-	int							 num_vertexs=0;
-	PrgT_Graph_Vertex*           min_vertex;
-	OlsrT_Djk_State*             pred_state_vertex ;
-	PrgT_Graph_Vertex*           pred_vertex;
-	PrgT_Graph_Vertex*           vertex;
-	PrgT_Graph_Edge *            simplex_edge;
-	OlsrT_Djk_Edge_State*        simplex_edge_stat;
+	int							i;
+
 	/* Use DJK to build route table */
 	FIN (olsr_rte_djk_rte_table_calculate (void));
 
@@ -6288,7 +5602,7 @@ olsr_rte_djk_rte_table_calculate (void)
 	/******** Starting Cals for New Rte Table ***********/
 	/****************************************************/
 	
-	//op_stat_write (global_stat_handles.rte_table_calcs_global_shandle, 1.0);
+	op_stat_write (global_stat_handles.rte_table_calcs_global_shandle, 1.0);
 	
 	/* First initialize the graph for PRG DJK.	*/
 	prg_djk_graph_init (prg_graph_ptr);
@@ -6301,157 +5615,12 @@ olsr_rte_djk_rte_table_calculate (void)
 	
 	num_edges = prg_vector_size (edge_vector_ptr);
 
-	vertex_vector_ptr = prg_graph_vertex_all_get (prg_graph_ptr);
-	all_vertex_vector_ptr = vertex_vector_ptr;
-	num_vertex = prg_vector_size (vertex_vector_ptr);
-	num_vertexs =prg_vector_size (all_vertex_vector_ptr);
-
-	
-	/****calculat the stable path to all dest****/
-	while (num_vertexs > 0)/*s*/
-		
-		{
-		     
-		   int      H=0;
-		   double   dist =1;
-		   int      index=0;
-		   int      m=0,vector_size=0;
-		   int      l=0;
-		   int        s=0;
-//		   PrgT_Graph_Edge_Type* edge; 
-		   
-		   
-		   num_vertexs =prg_vector_size (all_vertex_vector_ptr);
-		   
-		//printf("\n*////////////////////////////////////dans la boucle while////////////////////////////////\n");
-		   
-		 for (H =0 ; H < num_vertexs ;H++)
-			   
-			   { 
-			      // printf("\n*--------------------------iteration N°-----------------*%d\n",H);
-			       my_vertex=(PrgT_Graph_Vertex*)  prg_vector_access (all_vertex_vector_ptr,H);
-			       my_vertex_stat=(OlsrT_Djk_State*) prg_vertex_client_state_get(my_vertex,OLSRC_DJK_STATE);
-				 //printf("\n*-------------------------- my vertex state°-----------------*%g\n",my_vertex_stat->dist);
-				 if (my_vertex_stat->dist < dist)
-					 
-					 {
-					 //printf("\n*-------------test-------------\n");
-					    dist= my_vertex_stat->dist;
-						min_vertex=my_vertex;
-					 	min_vertex_stat=my_vertex_stat;
-						index=H;
-					 }
-				   
-			
-				}
-		   
-		   
-		    (PrgT_Graph_Vertex*)prg_vector_remove(all_vertex_vector_ptr,index);
-			num_vertexs =prg_vector_size (all_vertex_vector_ptr);
-			edges_vector_ptr =(PrgT_Vector*) prg_vertex_edges_get (min_vertex, PrgC_Graph_Element_Set_Outgoing);
-	        num_edge=prg_vector_size (edges_vector_ptr);
-			//printf("\n*-------------test--%d-----------\n",num_edge);
-			if (num_edge>0)
-				{
-				
-			for (s=0; s<num_edge;s++)
-			{
-			  simplex_edge = (PrgT_Graph_Edge *) prg_vector_access (edges_vector_ptr, s);
-			  simplex_edge_stat=(OlsrT_Djk_Edge_State*) prg_edge_client_state_get(simplex_edge,OLSRC_DJK_STATE);
-			  if( simplex_edge_stat->neighbor_intf == min_vertex_stat->addr)
-				  { 
-				    //printf("\n*------------oui------------\n");
-				    prg_vector_remove(edges_vector_ptr,s);
-				  }
-			  }
-			 }
-			  
-		//printf("\n*-----------nombre des edgs---------------%d\n",num_edge);
-			num_edge=prg_vector_size (edges_vector_ptr);
-			if (num_edge >0)
-				
-				{ 
-				   
-			   for (m= 0;m < num_edge ; m++)
-				   
-				  {
-				    my_edge = (PrgT_Graph_Edge *) prg_vector_access (edges_vector_ptr, m);
-					vertex_b =prg_edge_vertex_b_get (my_edge);
-	                edges_state_ptr = (OlsrT_Djk_Edge_State*) prg_edge_client_state_get (my_edge, OLSRC_DJK_STATE);
-					state_nbr_vertex=(OlsrT_Djk_State *) prg_vertex_client_state_get(vertex_b, OLSRC_DJK_STATE);
-				    dist_edge=edges_state_ptr->SDN;
-		      //  printf("\n-------dist edge=-------(%g)-----dist noeud=----(%g)\n", edges_state_ptr->SDN,state_nbr_vertex->dist);
-				
-						   
-				if ((dist_edge < state_nbr_vertex->dist)&&(min_vertex_stat->dist < state_nbr_vertex->dist))
-				 
-				 {
-				//printf("\n--------------------dist edge != 0---------------------------(%g)\n", state_nbr_vertex->dist);
-				   
-				   state_nbr_vertex->dist=dist_edge;
-				    num_vertex = prg_vector_size (vertex_vector_ptr);
-					    if (num_vertex >0)
-							{
-					       for (i=0 ; i < num_vertex ; i++)
-						      {
-						               pred_vertex=(PrgT_Graph_Vertex*)  prg_vector_access (vertex_vector_ptr,i);
-						               pred_state_vertex=(OlsrT_Djk_State*) prg_vertex_client_state_get(pred_vertex,OLSRC_DJK_STATE);
-						      if (pred_state_vertex->addr == state_nbr_vertex->addr)
-								  {
-								    
-							      pred_state_vertex->pred=min_vertex_stat->addr;
-								  prg_vertex_client_state_set (pred_vertex, OLSRC_DJK_STATE, (void *) pred_state_vertex);
-								  prg_vector_set (vertex_vector_ptr,pred_vertex,i);
-								 //printf("\n*////////////////////////////////////////////////////////////////////%d\n",pred_state_vertex->pred);
-								  }
-							   }
-						    }
-				   
-		         }
-				
-				
-					
-					}
-			   
-			    
-			   
-			   
-			   }
-			
-			
-			
-			
-			
-			
-		   }
-		 
-	
-	/******test*****/
-	 /*if (vertex_vector_ptr !=0)
-		 {
-	int    d=0;    
-	OlsrT_Djk_State*   m_vertex_stat ;        
-	PrgT_Graph_Vertex*	m_vertex;
-	vertex_vector_ptr=prg_graph_vertex_all_get (prg_graph_ptr);
-	 printf ("\n*************begin*******%d\n",num_vertex);
-           for (d=0; d < num_vertex ;d++)
-			   {
-			        m_vertex=(PrgT_Graph_Vertex*)  prg_vector_access (vertex_vector_ptr,d);
-			        m_vertex_stat=(OlsrT_Djk_State*) prg_vertex_client_state_get(m_vertex,OLSRC_DJK_STATE);  
-					 printf ("\n*************%d*************dist= %g**********%d\n",m_vertex_stat->addr,m_vertex_stat->dist,m_vertex_stat->pred);
-					}
-	 printf ("\n*************end*******\n"); 
-	
-	}*/
- //olsr_rte_routing_table_print_to_string();
-
 	/* If there are less than 1 ege, FOUT */
 	if (num_edges < 1)
 		{
 		prg_vector_destroy (edge_vector_ptr, OPC_FALSE);
 		FOUT;
 		}
-
 	
 	/* Destroy the vector of edges.		*/
 	prg_vector_destroy (edge_vector_ptr, PRGC_FALSE);
@@ -6484,86 +5653,32 @@ olsr_rte_djk_rte_table_calculate (void)
 	/* Calling entry_next_get without initializing the map iterator leads to undefined results */
 	/* Return values: vertex_ptr = destn vertex, path_cost = cost to destn, next_hops_lptr = list of next hop nodes to destn */
 	/* vertex_ptr should never be freed */
-	/* Depending upon the value of prg_djk_edge_weight, next_hops_ptr is dereferenced - such an API has been provided for perf reasons */
-	
-	
-	//printf("\nSrc		Dest		n_chemain		n_cost		path[i]\n\n");
-
-	while ( prg_djk_graph_routing_table_map_entry_next_get  (root_vertex_ptr, &vertex_ptr, &path_cost, &next_hops_ptr, &num_next_hops))
+	/* Depending upon the value of num_next_hops_get, next_hops_ptr is dereferenced - such an API has been provided for perf reasons */
+	while (prg_djk_graph_routing_table_map_entry_next_get (root_vertex_ptr, &vertex_ptr, &path_cost, &next_hops_ptr, &num_next_hops))
 		{
-			
-		int                     addr;
-	    Boolean                 no_link=OPC_FALSE;
-		OlsrT_Djk_State*        vertex_state;
-		OlsrT_Djk_State*        root_vertex_state;
-		
-        vertex_state=(OlsrT_Djk_State*) prg_vertex_client_state_get(vertex_ptr,OLSRC_DJK_STATE);
-		root_vertex_state=(OlsrT_Djk_State*) prg_vertex_client_state_get(root_vertex_ptr,OLSRC_DJK_STATE);
-		addr=vertex_state->addr;
-		//printf("\n---root_vertex ---%d---destination=---%d---\n",root_vertex_state->addr,vertex_state->addr);	
-			
-		/* Ignore if this is root vertex */ 
- 		if (vertex_ptr == root_vertex_ptr)
-			
+		/* Ignore if this is root vertex */
+		if (vertex_ptr == root_vertex_ptr)
 			continue;
 		
-		
-		if (path_cost == -1)
+		if (num_next_hops == 0)
+			continue;
+
+		if (num_next_hops == 1)
 			{
-			printf("one");
-			continue;
-			
+			next_hop_edge_ptr = (PrgT_Graph_Edge*) next_hops_ptr;
+			if (!next_hop_edge_ptr)
+				continue;
+			}
+		else
+			{
+			next_hops_lptr = (PrgT_List*) next_hops_ptr;
+			if ((next_hops_lptr == PRGC_NIL) || (prg_list_size (next_hops_lptr) == 0))
+				continue;
 			}
 		
-		/* Loop through the graph nodes */
-		/*get the next hop for the destination*/
-		//printf("\n-------adress=----%d----------%d--------\n\n",root_vertex_state->addr,addr);
-	   while (addr != root_vertex_state->addr)
-			   
-			   {
-			       int                  d=0;    
-	               OlsrT_Djk_State*     m_vertex_stat;        
-	               PrgT_Graph_Vertex*	m_vertex;
-				   int                  path_cost=0;
-	               vertex_vector_ptr=prg_graph_vertex_all_get (prg_graph_ptr);
-				   num_vertex=prg_vector_size(vertex_vector_ptr);
-				   
-		    for (d=0; d < num_vertex ;d++)
-			        {
-					
-			            m_vertex=(PrgT_Graph_Vertex*)  prg_vector_access (vertex_vector_ptr,d);
-			            m_vertex_stat=(OlsrT_Djk_State*) prg_vertex_client_state_get(m_vertex,OLSRC_DJK_STATE);  
-					   
-						//printf ("\n---------------m_vertex_stat->addr--------%d---------%d \n",m_vertex_stat->addr,m_vertex_stat->pred);
-						if (addr == m_vertex_stat->addr)
-							
-							 { 
-							   no_link=OPC_TRUE;
-							   //printf ("\n in the  if instruction\n");
-							   addr=m_vertex_stat->pred;
-							   next_hop_state_ptr=m_vertex_stat;
-							   vertex=m_vertex;
-							    
-							 }
-						
-						
-					
-					}
-				          
-      					  
-						  path_cost++;
-						
-						
-				        //printf("\n---root_vertex ---%d---next_hop------%d---- to dest -------------%d\n\n",root_vertex_state->addr,next_hop_state_ptr->addr,vertex_state->addr);
-				        /* if there is no link to dest break*/ 
-					   if( no_link == OPC_FALSE)
-							continue;
-			     }
-	
-		
-		
-		op_stat_write (global_stat_handles.nbr_delete_global_shandle, path_cost);
-		
+		if (path_cost == -1)
+			continue;
+
 		/* We are going to add this in route table */
 		
 		/************************************************/
@@ -6576,19 +5691,17 @@ olsr_rte_djk_rte_table_calculate (void)
 		/* Get the destination address & Create dest prefix */
 		inet_dest_addr = inet_rtab_index_to_addr_convert (dest_state_ptr->addr);
 		
-
-		
 		/************************************************/
 		/*********** Get nexthop address ****************/
 		/************************************************/
 		
-		//Find the best nexthop (tiebreaker for nexthops)
+		// Find the best nexthop (tiebreaker for nexthops)
 		if (num_next_hops != 1)
 			next_hop_edge_ptr = olsr_rte_djk_next_hop_get (next_hops_lptr);
 		
 		/* Get the next hop vertex and nexthop address */
-		//next_hop_vertex_ptr = prg_edge_vertex_b_get (next_hop_edge_ptr);
-	    //next_hop_state_ptr = (OlsrT_Djk_State *) prg_vertex_client_state_get (next_hop_vertex_ptr, OLSRC_DJK_STATE);
+		next_hop_vertex_ptr = prg_edge_vertex_b_get (next_hop_edge_ptr);
+		next_hop_state_ptr = (OlsrT_Djk_State *) prg_vertex_client_state_get (next_hop_vertex_ptr, OLSRC_DJK_STATE);
 		inet_next_addr = inet_rtab_index_to_addr_convert (next_hop_state_ptr->addr);
 		
 		/************************************************/
@@ -6596,11 +5709,8 @@ olsr_rte_djk_rte_table_calculate (void)
 		/************************************************/
 		
 		/* Get the edge state ptr  and local interface address */
-		//edge_state_ptr = (OlsrT_Djk_Edge_State *) prg_edge_client_state_get (next_hop_edge_ptr, OLSRC_DJK_STATE);
-		inet_local_intf_addr = inet_rtab_index_to_addr_convert (root_vertex_state->addr);
-		//printf("\n--------edg state--------\n :%g",edge_state_ptr->SDN);
-		
-		//printf("\n\n\n code 2323  SDN= %g",edge_state_ptr->SDN);
+		edge_state_ptr = (OlsrT_Djk_Edge_State *) prg_edge_client_state_get (next_hop_edge_ptr, OLSRC_DJK_STATE);
+		inet_local_intf_addr = inet_rtab_index_to_addr_convert (edge_state_ptr->local_intf);
 			
 		/*Get outgoing port info */
 		inet_rte_is_local_address (inet_local_intf_addr, module_data_ptr, &intf_index);
@@ -6613,9 +5723,8 @@ olsr_rte_djk_rte_table_calculate (void)
 		/* The next hop is NOT the node's main address, rather its interface address	*/
 		//olsr_rte_table_incremental_entry_add (old_olsr_rte_table, dest_state_ptr->addr, next_hop_state_ptr->addr,
 		//	path_cost, edge_state_ptr->local_intf);
-		olsr_rte_table_incremental_entry_add (old_olsr_rte_table, dest_state_ptr->addr, next_hop_state_ptr->addr,
-			path_cost, root_vertex_state->addr);
-		//printf("\n Ara5:the conset is:%f\n",path_cost);
+		olsr_rte_table_incremental_entry_add (old_olsr_rte_table, dest_state_ptr->addr, edge_state_ptr->neighbor_intf,
+			path_cost, edge_state_ptr->local_intf);
 
 		/* When an entry corresponding to *any* prefix for the given node is added			*/
 		/* we will add entries for *all* prefixes of this node through the same next hop.	*/
@@ -6640,14 +5749,14 @@ olsr_rte_djk_rte_table_calculate (void)
 				if ((intf_set_entry_ptr->main_addr == dest_state_ptr->addr) && 
 					(intf_set_entry_ptr->intf_addr != intf_set_entry_ptr->main_addr))
 					olsr_rte_table_incremental_entry_add (old_olsr_rte_table, intf_set_entry_ptr->intf_addr, 
-						next_hop_state_ptr->addr, path_cost, root_vertex_state->addr);
+						edge_state_ptr->neighbor_intf, path_cost, edge_state_ptr->local_intf);
 				}
 			
 			prg_list_destroy (keys_lptr, OPC_FALSE);
 			}
 		
 		} /* End looping through all vertices */
-		//op_stat_write (global_stat_handles.rte_table_calcs_global_shandle, 1.0);
+		
 	
 	/* go through all the remaining entries in old OLSR rte table */
 	keys_lptr = (List*) prg_bin_hash_table_item_list_get (old_olsr_rte_table);
@@ -6663,7 +5772,7 @@ olsr_rte_djk_rte_table_calculate (void)
 		old_inet_next_addr = inet_rtab_index_to_addr_convert (olsr_rte_entry_ptr->next_addr);
 				
 		/* Delete these entries from IP Rte table */
-		Inet_Cmn_Rte_Table_Entry_Delete (module_data_ptr->ip_route_table, 
+		 (module_data_ptr->ip_route_table, 
 			olsr_rte_entry_ptr->dest_prefix, old_inet_next_addr, olsr_protocol_id);
 		
 		/* Destroy the dest_prefix */
@@ -6695,15 +5804,12 @@ static PrgT_Graph_Edge*
 olsr_rte_djk_next_hop_get (PrgT_List* nexthop_list_ptr)
 	{
 	int 				list_size, index;
-	int					mprs_willingness = 1;
-	int					non_mprs_willingness = 1;
+	int					mprs_willingness = -1;
+	int					non_mprs_willingness = -1;
 	PrgT_Graph_Edge*	next_hop_edge_ptr;
 	PrgT_Graph_Edge*	mprs_edge_ptr = OPC_NIL;
 	PrgT_Graph_Edge*	non_mprs_edge_ptr = OPC_NIL;
 	OlsrT_Djk_State*	next_hop_st_ptr;
-	int 				selected=0;
-	
-	
 	
 	/* Obtain the MPR and non-MPR selector nodes with highest willingness 		*/
 	/* then return element with highest willingness, MPR selector property		*/
@@ -6712,32 +5818,21 @@ olsr_rte_djk_next_hop_get (PrgT_List* nexthop_list_ptr)
 	
 	list_size = prg_list_size (nexthop_list_ptr);
 	for (index = 0; index < list_size; index++)
-		{ 
+		{
 		/* Access the first next-hop path in the path list.	*/
 		next_hop_edge_ptr = (PrgT_Graph_Edge *) prg_list_access (nexthop_list_ptr, index);
 		
-//	ara_state = (OlsrT_Djk_State *) prg_vertex_client_state_get (prg_edge_vertex_a_get (next_hop_edge_ptr), OLSRC_DJK_STATE);
-
-	//	printf("\ni=%d",index);
-	//	print_vertex(" the noeud in Edge",prg_edge_vertex_b_get (next_hop_edge_ptr)," ");
-	//	print_vertex(".....the noeud source",root_vertex_ptr,"");
-
-		
-
- 
-		
-		next_hop_st_ptr = (OlsrT_Djk_State *) prg_vertex_client_state_get (prg_edge_vertex_b_get (next_hop_edge_ptr), OLSRC_DJK_STATE);
-		//printf("\n\n Ara:(%d)the Src Is (%d) the vertxRoot is (%d) \n",index,list_size,ara_state->addr,rootstate->addr);
+		next_hop_st_ptr = (OlsrT_Djk_State *) prg_vertex_client_state_get 
+			(prg_edge_vertex_b_get (next_hop_edge_ptr), OLSRC_DJK_STATE);
 		
 		if (next_hop_st_ptr->mpr_selector)
-			{//printf("\n will %d= %d",index,next_hop_st_ptr->willingness);
+			{
 			/* It is a mpr selector */
 			if ((mprs_edge_ptr == OPC_NIL) || 
 				(next_hop_st_ptr->willingness > mprs_willingness))
 				{
 				mprs_edge_ptr = next_hop_edge_ptr;
 				mprs_willingness = next_hop_st_ptr->willingness;
-				//printf("%d will\n",mprs_willingness);
 				}
 			}
 		else
@@ -6745,10 +5840,8 @@ olsr_rte_djk_next_hop_get (PrgT_List* nexthop_list_ptr)
 			if ((non_mprs_edge_ptr == OPC_NIL) ||
 				(next_hop_st_ptr->willingness > non_mprs_willingness))
 				{
-			//	printf("\n will %d= %d",index,next_hop_st_ptr->willingness);
 				non_mprs_edge_ptr = next_hop_edge_ptr;
 				non_mprs_willingness = next_hop_st_ptr->willingness;
-				//printf("%d will\n",non_mprs_willingness);
 				}
 			}
 		}
@@ -6788,7 +5881,6 @@ olsr_rte_graph_nbr_add (OlsrT_Neighbor_Set_Entry* nbr_set_entry_ptr, OlsrT_Link_
 				
 		state_ptr->addr = nbr_set_entry_ptr->nbr_addr;
 		state_ptr->willingness = nbr_set_entry_ptr->willingness;
-		state_ptr->dist=4.2913541e+09;
 				
 		if (prg_bin_hash_table_item_get (mpr_selector_set_table, &(nbr_set_entry_ptr->nbr_addr)))
 			state_ptr->mpr_selector = OPC_TRUE;
@@ -6826,39 +5918,22 @@ olsr_rte_graph_nbr_add (OlsrT_Neighbor_Set_Entry* nbr_set_entry_ptr, OlsrT_Link_
 		vertex_ptr, PrgC_Graph_Edge_Simplex)) == PRGC_NIL)
 		{
 		/* Create an edge between this vertex and root vertex */
-
 		edge_ptr = prg_graph_edge_insert (prg_graph_ptr, root_vertex_ptr, vertex_ptr, PrgC_Graph_Edge_Simplex);
-				
-		
 				
 		/* Populate edge_client state */
 		edge_state_ptr = (OlsrT_Djk_Edge_State *) op_prg_pmo_alloc (olsr_djk_edge_state_pmoh);
 		edge_state_ptr->local_intf = link_set_entry_ptr->key.local_intf_addr;
 		edge_state_ptr->neighbor_intf = link_set_entry_ptr->key.nbr_intf_addr;
-		edge_state_ptr->SDN=nbr_set_entry_ptr->stabilite.SDN;
-		
-		
-		//printf("Mouloud %g",nbr_set_entry_ptr->stabilite.SDN);
-		//
-		// inserer votre sdn 
 				
 		prg_edge_client_state_set (edge_ptr, OLSRC_DJK_STATE, (void *) edge_state_ptr);
-
 		}
 	else
 		{
 		/* Edge already exists. Make sure the local_intf value is set correctly */
 		/* Get the state */
-				
 		edge_state_ptr = (OlsrT_Djk_Edge_State *) prg_edge_client_state_get (edge_ptr, OLSRC_DJK_STATE);
 		edge_state_ptr->local_intf = link_set_entry_ptr->key.local_intf_addr;
 		edge_state_ptr->neighbor_intf = link_set_entry_ptr->key.nbr_intf_addr;
-		edge_state_ptr->SDN=nbr_set_entry_ptr->stabilite.SDN;
-		
-		//edge_state_ptr->SDN
-		// inserer votre sdn 
-		
-		
 		}
 		
 	
@@ -6920,20 +5995,18 @@ olsr_rte_graph_two_hop_nbr_add (int nbr_addr, OlsrT_Two_Hop_Neighbor_Set_Entry* 
 	void*						old_entry = OPC_NIL;
 	OlsrT_Djk_State*			state_ptr;
 	OlsrT_Djk_State* 			one_hop_neighbor_state_ptr;
-//	double 							SDN;
-	OlsrT_Djk_Edge_State*       edge_state_ptr;
-	
-
 	
 	FIN (olsr_rte_graph_two_hop_nbr_add (<args>));
 		
 	/* Check if this nbr vertex exists in the graph */
-	if ((vertex_ptr = (PrgT_Graph_Vertex*) prg_bin_hash_table_item_get (djk_hash_table_ptr, &nbr_addr)) != PRGC_NIL)
+	if ((vertex_ptr = (PrgT_Graph_Vertex*) prg_bin_hash_table_item_get 
+		(djk_hash_table_ptr, &nbr_addr)) != PRGC_NIL)
 		{
 		/* This Nbr exists, add this two hop vertex in graph */
 		
 		/* Check if two-hop vertex is already present in the graph */
-		if ((two_hop_vertex_ptr = (PrgT_Graph_Vertex*) prg_bin_hash_table_item_get(djk_hash_table_ptr, &(two_hop_entry_ptr->two_hop_addr))) == PRGC_NIL)
+		if ((two_hop_vertex_ptr = (PrgT_Graph_Vertex*) prg_bin_hash_table_item_get
+			(djk_hash_table_ptr, &(two_hop_entry_ptr->two_hop_addr))) == PRGC_NIL)
 			{
 			/* No such vertex already exists, Create new */
 			two_hop_vertex_ptr = prg_graph_vertex_insert (prg_graph_ptr);
@@ -6943,13 +6016,13 @@ olsr_rte_graph_two_hop_nbr_add (int nbr_addr, OlsrT_Two_Hop_Neighbor_Set_Entry* 
 				
 			state_ptr->addr = two_hop_entry_ptr->two_hop_addr;
 			state_ptr->willingness = OLSRC_INVALID;
-			state_ptr->dist=4.2913541e+09;
-		
+	
 			/* Set the client state on the vertex */
 			prg_vertex_client_state_set (two_hop_vertex_ptr, OLSRC_DJK_STATE, (void *) state_ptr);
 					
 			/* Insert this entry in hash table */
-			prg_bin_hash_table_item_insert (djk_hash_table_ptr, &two_hop_entry_ptr->two_hop_addr, two_hop_vertex_ptr, &old_entry);
+			prg_bin_hash_table_item_insert (djk_hash_table_ptr, 
+				&two_hop_entry_ptr->two_hop_addr, two_hop_vertex_ptr, &old_entry);
 			}
 				
 		/* Either we have added new vertex for this 2-hop or it was already present */
@@ -6963,27 +6036,11 @@ olsr_rte_graph_two_hop_nbr_add (int nbr_addr, OlsrT_Two_Hop_Neighbor_Set_Entry* 
 		/* Create edge only when edge does not exists */
 		if (prg_graph_edge_exists (prg_graph_ptr, vertex_ptr, two_hop_vertex_ptr, PrgC_Graph_Edge_Simplex) == PRGC_NIL)
 			{
-			edge_ptr = prg_graph_edge_insert (prg_graph_ptr, vertex_ptr /*1-hop-nbr*/, two_hop_vertex_ptr /*2-hop-nbr*/, PrgC_Graph_Edge_Simplex);
-			
-			//state_vertex= (OlsrT_Djk_State*) prg_vertex_client_state_get (two_hop_vertex_ptr, OLSRC_DJK_STATE);
-			//SDN=get_SDN(two_hop_entry_ptr->two_hop_addr);		
-		//declarer eddge state ptr
-			
-		edge_state_ptr = (OlsrT_Djk_Edge_State *) op_prg_pmo_alloc (olsr_djk_edge_state_pmoh);
-		edge_state_ptr->local_intf = nbr_addr;
-		edge_state_ptr->neighbor_intf = two_hop_entry_ptr->two_hop_addr;
-		edge_state_ptr->SDN=two_hop_entry_ptr->SDN;
-		//printf("\n---------%g---------\n",edge_state_ptr->SDN);
-			
-		
-		//edge_state_ptr->SDN
-		// inserer votre sdn 
-				
-	//	prg_edge_client_state_set (edge_ptr, OLSRC_DJK_STATE, (void *) edge_state_ptr)
-			
+			edge_ptr = prg_graph_edge_insert (prg_graph_ptr, vertex_ptr /*1-hop-nbr*/, 
+						two_hop_vertex_ptr /*2-hop-nbr*/, PrgC_Graph_Edge_Simplex);
 				
 			/* Set OPC_NIL for client state edge */
-			prg_edge_client_state_set (edge_ptr, OLSRC_DJK_STATE, (void *) edge_state_ptr);
+			prg_edge_client_state_set (edge_ptr, OLSRC_DJK_STATE, (void *) OPC_NIL);
 			}
 
 		}
@@ -7031,13 +6088,6 @@ olsr_rte_graph_tc_add (OlsrT_TC_Set_Entry* tc_set_entry_ptr)
 	OlsrT_Djk_State* 	state_ptr;
 	PrgT_Graph_Vertex *	vertex_ptr;
 	PrgT_List_Cell *	dest_addr_list_cell_ptr;
-	PrgT_List_Cell *	dest_SDN_list_cell_ptr;
-	double              intf_SDN;
-	int                 i=0;
-	double*	            dest_SDN_ptr;
-//    PrgT_Graph_Edge*    test_edge_ptr;
-	OlsrT_Djk_Edge_State*  ara_edge;
-	PrgT_Graph_Edge *     edge_ptr;
 	
 	FIN (olsr_rte_graph_tc_add (<args>));
 	
@@ -7053,7 +6103,6 @@ olsr_rte_graph_tc_add (OlsrT_TC_Set_Entry* tc_set_entry_ptr)
 				
 		state_ptr->addr = tc_set_entry_ptr->last_addr;
 		state_ptr->willingness = OLSRC_INVALID;
-		state_ptr->dist=4.2913541e+09;
 	
 		/* Set the client state on the vertex */
 		prg_vertex_client_state_set (vertex_ptr, OLSRC_DJK_STATE, (void *) state_ptr);
@@ -7067,21 +6116,12 @@ olsr_rte_graph_tc_add (OlsrT_TC_Set_Entry* tc_set_entry_ptr)
 	/* vertex_ptr variable has its handle. 				*/
 		
 	/* Go through the MPR selectors this MPR node can reach */
-	for (dest_addr_list_cell_ptr = prg_list_head_cell_get (&tc_set_entry_ptr->state_ptr->dest_addr_list),dest_SDN_list_cell_ptr = prg_list_head_cell_get (&tc_set_entry_ptr->state_ptr->SDN_list);
-		 dest_addr_list_cell_ptr , dest_SDN_list_cell_ptr;
-		 dest_addr_list_cell_ptr = prg_list_cell_next_get (dest_addr_list_cell_ptr), dest_SDN_list_cell_ptr = prg_list_cell_next_get (dest_SDN_list_cell_ptr))
+	for (dest_addr_list_cell_ptr = prg_list_head_cell_get (&tc_set_entry_ptr->state_ptr->dest_addr_list);
+		 dest_addr_list_cell_ptr;
+		 dest_addr_list_cell_ptr = prg_list_cell_next_get (dest_addr_list_cell_ptr))
 		{
-		
-		
-				
-		
 		PrgT_Graph_Vertex *	mprs_vertex_ptr;
 		int * 				dest_addr_ptr = (int*) prg_list_cell_data_get (dest_addr_list_cell_ptr);			
- 				
-		dest_SDN_ptr= (double*) prg_list_cell_data_get (dest_SDN_list_cell_ptr);
-		
-		 intf_SDN=*dest_SDN_ptr;
-		//printf("\n\n \t    103  %d  %g    %g",dest_SDN_ptr,*dest_SDN_ptr,&dest_SDN_ptr);
 			
 		if ((mprs_vertex_ptr = (PrgT_Graph_Vertex*) prg_bin_hash_table_item_get 
 			(djk_hash_table_ptr, dest_addr_ptr)) == PRGC_NIL)
@@ -7089,12 +6129,11 @@ olsr_rte_graph_tc_add (OlsrT_TC_Set_Entry* tc_set_entry_ptr)
 			/* No such vertex already exists, Create new */
 			mprs_vertex_ptr = prg_graph_vertex_insert (prg_graph_ptr);
 				
-			/* Allocate memory for an OSPF DJK node. */
+			/* Allocate memory for an OSPF DJK node.	*/
 			state_ptr = (OlsrT_Djk_State *) op_prg_pmo_alloc (olsr_djk_state_pmoh);
 				
 			state_ptr->addr = *dest_addr_ptr;
 			state_ptr->willingness = OLSRC_INVALID;
-			state_ptr->dist=4.2913541e+09;
 	
 			/* Set the client state on the vertex */
 			prg_vertex_client_state_set (mprs_vertex_ptr, OLSRC_DJK_STATE, (void *) state_ptr);
@@ -7108,35 +6147,12 @@ olsr_rte_graph_tc_add (OlsrT_TC_Set_Entry* tc_set_entry_ptr)
 		/* and MPR selector node. 									*/
 		if (prg_graph_edge_exists (prg_graph_ptr, vertex_ptr, mprs_vertex_ptr, PrgC_Graph_Edge_Simplex) == PRGC_NIL)
 			{
-			 edge_ptr = prg_graph_edge_insert (prg_graph_ptr, vertex_ptr /*mpr-node*/, mprs_vertex_ptr /*mpr-selector-node*/, PrgC_Graph_Edge_Simplex);
+			PrgT_Graph_Edge * edge_ptr = prg_graph_edge_insert (prg_graph_ptr, vertex_ptr /*mpr-node*/, 
+				mprs_vertex_ptr /*mpr-selector-node*/, PrgC_Graph_Edge_Simplex);
 			
-			
-			
-			
-			ara_edge  = (OlsrT_Djk_Edge_State *) op_prg_pmo_alloc (olsr_djk_edge_state_pmoh);
-			ara_edge->SDN=intf_SDN;
-			ara_edge->local_intf=tc_set_entry_ptr->last_addr;
-			ara_edge->neighbor_intf=*dest_addr_ptr;
-			//printf("\n\n\n\n\n\n\n\n jiji   %g",intf_SDN);
-		
 			/* Set OPC_NIL for client state edge */
-			prg_edge_client_state_set (edge_ptr, OLSRC_DJK_STATE, (void *) ara_edge );
-				
-	
+			prg_edge_client_state_set (edge_ptr, OLSRC_DJK_STATE, (void *) OPC_NIL);
 			}
-		
-		/*if ((test_edge_ptr=prg_graph_edge_exists (prg_graph_ptr, vertex_ptr, mprs_vertex_ptr, PrgC_Graph_Edge_Simplex)) == PRGC_NIL)
-			printf("in if");
-		else
-			 {OlsrT_Djk_Edge_State* ara_edgea;
-			 ara_edgea= (OlsrT_Djk_Edge_State *)prg_edge_client_state_get (test_edge_ptr, OLSRC_DJK_STATE);
-
-			 if(ara_edgea!=OPC_NIL)		          
-			 
-			 printf("\n\n ja3far %g",ara_edge->SDN);
-			 }
-			
-	*/
 		
 		} /* End loop through mpr-selectors */
 	
@@ -7185,1122 +6201,83 @@ olsr_rte_graph_tc_delete (OlsrT_TC_Set_Entry* tc_set_entry_ptr)
 	}
 
 
+/**************************************************************************************************************/
+/* ------------------------------------ > walid	my function		< ------------------------------------------- */
+/**************************************************************************************************************/
 
 
+// ************************************** calculate stability function *****************************************
 
-
-
-
-/////////////////////////////////////////////////////stabel Route/////////////////////////////////////////////////
-//void chemin_stable ()
-	//{
-	
-
-/***********************************************************************************************/
-void Olsr_Valeur_du_Signal(OlsrT_Neighbor_Set_Entry** noeud,double signal)
+static void Olsr_calculate_stability(int adr)
 	{
 	
-	
-	FIN (Olsr_Valeur_du_Signal (void));
-	
-//	   noeud->val_signal->val_signal[noeud->val_signal->nbr_msg_recevu++]=signal;
-	//noeud->val_signal->val_signal[*noeud->val_signal->nbr_msg_recevu++]=signal;
-//noeud.val_signal.val_signal[noeud.val_signal.nbr_msg_recevu++]=signal;
+	OlsrT_Neighbor_Set_Entry*			Neighbor_Set;	
+	double 								E_X=0.0;// expectation ( esperance mathematique )
+	double								Xbar=0.0,Var=0.0, z=0;
+	int     							nbr_msg_hello;
+	int 								i;
+       		
+	FIN (Olsr_calculate_stability(int));
 		
-	FOUT;
-	}
-
-double Sous(double a,double b)
-	{
+	Neighbor_Set=(OlsrT_Neighbor_Set_Entry*) olsr_rte_neighbor_set_entry_get(adr);	/* get neighbor info		*/
 	
-	double c;
-	FIN (Sous (<args>));
-	if(a==b)
-		c=0.0;
-	else{
-		if (a>b)printf("\nA (%g) biggest then B (%g)",a,b);
-			else printf("\nB (%g) biggest then A (%g)",b,a);
-		 c=a-b;
+	nbr_msg_hello =Neighbor_Set->signal_value.nbr_msg_received;						/* get nbr_msg_received 	*/
+	
+	/* calculate expectation(esperance 	*/																				
+	/*  mathematique E(X)=sum(Xi/N)		*/
+	for(i=0; i<nbr_msg_hello; i++)
+		{
+		E_X=(E_X+Neighbor_Set->signal_value.signal_value_table[i])/nbr_msg_hello;
 		}
-	FRET (c);
-	}
-
-
-
-
-
-
-
-
-/***********************************************************************************************/
-
-void Olsr_calculer_stablilte(int adr,double power)
-	{
-		
-
-		double 	 fs=0.0;//return fonction de stabilite
-		double 	 fs2=0.0;		
-//int		 i;
-//int 	 max; // max 
-		double 	 Xbar=0.0;//esperance mathematique
-		double Ara_power=0.01,Ara_fs=0.02;
 	
-		double  arabica1=2.738e-14;
-		double  arabica2=3.23e-27;
-		double   vitesse,zone_local;
-		int     nbr_msg_hello;
-        int	    i,zone_franchis;
-		
-		double 	zone_nouveau,zone_ancien;
-		int nbr_msg_recevu=0;
-		//double 	 Xbar2;
-		double x=0, y=0, z=0;
-	//	double n;
-		
-	//	double xi;
-//	int n,Sum;
-		
-		OlsrT_Neighbor_Set_Entry*			ara;
-		
-		FIN (Olsr_calculer_stablilte(<args>));
-		vitesse=1;
-		zone_local=1.0;
-		
-		
-		//power=2.72e-18;
-		
-		ara=(OlsrT_Neighbor_Set_Entry*) olsr_rte_neighbor_set_entry_get (adr);
-	
-		
-		nbr_msg_hello = ara->val_signal.nbr_msg_recevu;
- //   printf("\n\n\n\n****************************\n\n")	;
-	//printf("Le voisin = %d a envoyé = %d Messages Hello",ara->nbr_addr,nbr_msg_hello);
-	
-	
-//max=((ara->val_signal.nbr_msg_recevu>=40)?ara->val_signal.nbr_msg_recevu%40:ara->val_signal.nbr_msg_recevu);
-		
-	
-		
-//	if(max==8)power-=0.00001e-14;
-		
-	//ara->val_signal.val_signal[max]=power;
-
-    zone_local = (ara->val_signal.val_signal[nbr_msg_hello-1])*10000.0;
-		
-	//printf("\non this case je recevu  %:8:2f et %g",ara->val_signal.val_signal[ara->val_signal.nbr_msg_recevu],rcvd_power);
-	//ara->val_signal.nbr_msg_recevu++;
-    //printf(" Zone locale %g \n",zone_local);
-		
-		
-		
-		
-		//Vitesse ;
-			
-				
-				zone_franchis =0;
-				zone_ancien=0;
-				
-				for (i = 0;i < nbr_msg_hello ;i++ ) 
-					{
-						zone_nouveau = ara->val_signal.val_signal[i];
-			            
-						//printf(" \n *********************************** i== %d   val_signal = %g zone_nouveau == %d \n \n",i, ara->val_signal.val_signal[i],zone_nouveau);
-						
-						
-						if (i != 0)
-						{
-		
-						   if(zone_nouveau != zone_ancien)
-							{
-							
-							     zone_franchis++;
-							//	 printf(" \n *********************************** i== %d   zone_ancien == %g zone_nouveau == %g \n \n",i, zone_ancien,zone_nouveau);
-								
-							}
-						
-						}
-						
-							zone_ancien = zone_nouveau;
-
-					}
-		
-		
-				
-				vitesse = (double) zone_franchis/(ara->val_signal.temps2 - ara->val_signal.temps1);
- 
-		  //  printf("\n");
-		//	printf("zone_franchis= %d  temps1 = %f temps2 = %f vitesse = %f\n \n",zone_franchis,ara->val_signal.temps1 , ara->val_signal.temps2, vitesse);						
-				 
-			
-			
-			
-			
-		
-		
-		//calcul de fs;
-				
-				
-				nbr_msg_recevu=ara->val_signal.nbr_msg_recevu;
-				x=0.0;
-				
-				for(i=0; i<nbr_msg_recevu; i++)
-				{
-					x += (((ara->val_signal.val_signal[i])*(ara->val_signal.val_signal[i]))/nbr_msg_recevu);
-
-					//printf( "\n x= %g ",x);
-				}
-            
-				y=0.0;
-				
-                for(i=0; i<nbr_msg_recevu; i++)
-				{
-					y+= ((ara->val_signal.val_signal[i])/nbr_msg_recevu);
-
-					//printf( "\n y = %g ", y);
-				}
-			
-				z= y*y; 
-				//printf( "\n z= %g ", z);
-				fs = x-z;
-				//printf( "\n fs= %g ", fs);
-
-
-
-
-	fs= fs * vitesse * zone_local;	
-         printf(" \n");
-	     printf(" fs =  %g \n  vitesse= %f \n zone_local= %d \n \n",fs,vitesse,zone_local);
-				
-				
-		
-		
-		
-		
-		/*
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		//if(ara->val_signal.nbr_msg_recevu>=40)max=40;
-		//else
-				max = ara->val_signal.nbr_msg_recevu;
-		printf("\n\n\n\n****************************\n\n")	;
-				//printf("\n max= %d",  ara->val_signal.nbr_msg_recevu);
-		
-
-				max--;
-	max=((ara->val_signal.nbr_msg_recevu>50)?ara->val_signal.nbr_msg_recevu%50:ara->val_signal.nbr_msg_recevu);
-		
-		printf("max value %d \n",max);
-		
-		
-		
-		
-		/****************************************************************/
-		
-		
-		
-		
-/*if((max==0)&&(ara->val_signal.nbr_msg_recevu!=0))	
+	/* calculate Xbar=sum((Xi)²/N) 		*/
+    for(i=0; i<nbr_msg_hello; i++)
 		{
-		fs=0.0;
-		printf("\n    www.Thardet.com %d",ara->val_signal.nbr_msg_recevu);}
-	else
-		{
-		//
-		
-		
-		
-	for(i=0;i<max;i++)
-		{
-		Xbar+=(ara->val_signal.val_signal[i]);
-	printf("\n X[%d]= %g",i,(ara->val_signal.val_signal[i]));
+		Xbar=(Neighbor_Set->signal_value.signal_value_table[i]*Neighbor_Set->signal_value.signal_value_table[i])
+			/nbr_msg_hello;
 		}
-	Xbar/=max;
-	//Xbar+=5;
-	printf("\n Xbar=%g",Xbar);
-	for(i=0;i<max;i++)
-		{		}
-	fs/=max;
+	//printf("the E(X)= is %g \n",signal_to_int(E_X));
+	//printf("the Xbar = is %g \n",signal_to_int(Xbar));
+	/* calculate Var(X) 				*/
 	
-	
- 
-	//printf("NEIGHBOR BATTERY  = %d  \n",ara->energie );
-	fs-=(Xbar*Xbar);
-		 Xbar2= Xbar* Xbar;
-
-//fs= Sum(xi*xi/n)- (Xbar2) //variance;
-	fs= Xbar-Xbar2;
-
-	printf("\n  Xbar2 =%g ",  Xbar2);
-	printf("\n fs=%g", fs);
-	
-	//	printf("\n (xi2/n-Xbar2)=( %g ) -( %g )= ( %g ) ara souti n ",fs,Xbar2,Sous(fs,Xbar*Xbar));
-	
-		//printf("\n fs =%g ", fs);
-
-
-	
-	
-/*	
-	if(fs<0)fs*=-1;
-//	if(fs>1e-45)
-	{
-//	print_addr(own_main_address);	
-//	printf("\n	%g - %g =	 %g		",fs+Xbar*Xbar,Xbar*Xbar,fs);
-//	print_addr(adr);
-	
-/*	printf("\n	%g	 %g		",Xbar-3*sqrt(fs),Xbar+3*sqrt(fs));
-	printf("\n	%g	 %g		",Xbar-2*sqrt(fs),Xbar+2*sqrt(fs));
-	printf("\n	%g	 %g		",Xbar-1*sqrt(fs),Xbar+1*sqrt(fs));*/
-	//printf("\n");
-		
-	//}
-	/*if(fs<0)fs*=-1;
-	
-//printf("\nthe max address %d val=%g ",max,fs);
-	}
-	
-	
-	/*fs=fs*vitesse*zone_local;	*/
-	//ara->stabilite.SDN=fs* ara->val_signal.val_signal[max]/(ara->energie*test_energy(ara->energie));
-	/*bn resultats sauf il s'affiche pas le packet draped*/
-   
-	//printf("fs =  %g \n   of @ %g",own_main_address,ara->stabilite.SDN );
-	
-/*printf("\n________________________________________________________");
-	printf("\nIts one");
-	printf("\npower=%g,\n Fs=%g \n Codeur=%g",power,fs,Codeur(power,fs));
-
-	
-	Decodeur(Codeur(power,fs),&Ara_power,&Ara_fs);
-	printf("\nAra_pwer=%g \n Ara_fs=%g",get_sdn_fs(Codeur(power,fs),SDN_POWER),get_sdn_fs(Codeur(power,fs),SDN_FS));
-	
-*/		
+	Var=Xbar-(E_X*E_X);
+	Neighbor_Set->stability.SDN=Var;
+	printf(" \n");
+	printf("the SDN= is %g \n",signal_to_int(Neighbor_Set->stability.SDN));	
 	
 	FOUT;
 	}
-	
+// *************************************************************************************************************
+// ************************* walid set Signal Value in neighbor table ******************************************
 
-
-		
-	void
-prg_djk_example_code ()
+static void Olsr_set_Signal_Value(int adr)
 	{
-	int i, vsize;
-	PrgT_Graph_State_ID state_id;
-	PrgT_Graph *graph_ptr;
-	PrgT_Graph_Vertex *vtx_a_ptr, *vtx_b_ptr;
-	PrgT_Graph_Vertex *vtx_c_ptr, *vtx_d_ptr;
-	PrgT_Graph_Edge *edge_ab_ptr, *edge_bd_ptr;
-	PrgT_Graph_Edge *edge_ac_ptr, *edge_cd_ptr;
-	PrgT_Graph_Edge *edge_ptr;
-	PrgT_Vector *path_set_vptr, *path_vptr;
-	PrgT_Compcode status;
-
-	FIN (prg_djk_example_code (void));
-
-	/* Register handlers for our namespace. */
-	state_id = prg_graph_state_handler_register (EXAMPLE_NAMESPACE,
-	EXAMPLE_STATE, PRGC_NIL, PRGC_NIL);
-
-	if (state_id == PRGC_GRAPH_INVALID_ID)
-		FOUT;
-
-	graph_ptr = prg_graph_create (EXAMPLE_NAMESPACE);
-
-	/* Build up the following graph. */
-	/*       */
-	/*   B   */
-	/*  / \  */
-	/* A   D */
-	/*  \ /  */
-	/*   C   */
-	/*       */
-
-	/* Insert Vertices. */
-	vtx_a_ptr = prg_graph_vertex_insert (graph_ptr);
-	vtx_b_ptr = prg_graph_vertex_insert (graph_ptr);
-	vtx_c_ptr = prg_graph_vertex_insert (graph_ptr);
-	vtx_d_ptr = prg_graph_vertex_insert (graph_ptr);
-
-	/* Insert edges. */
-	edge_ab_ptr = prg_graph_edge_insert (graph_ptr, vtx_a_ptr,
-		vtx_b_ptr, PrgC_Graph_Edge_Duplex);
-
-	edge_ac_ptr = prg_graph_edge_insert (graph_ptr, vtx_a_ptr,
-		vtx_c_ptr, PrgC_Graph_Edge_Duplex);
-
-	edge_bd_ptr = prg_graph_edge_insert (graph_ptr, vtx_b_ptr,
-		vtx_d_ptr, PrgC_Graph_Edge_Duplex);
-
-	edge_cd_ptr = prg_graph_edge_insert (graph_ptr, vtx_c_ptr,
-		vtx_d_ptr, PrgC_Graph_Edge_Duplex);
-
-	/* Initialize the DJK state on our graph */
-	status = prg_djk_graph_init (graph_ptr);
-	if (status == PrgC_Compcode_Failure)
-		{ prg_graph_destroy (graph_ptr, PRGC_TRUE); FOUT; }
-
-	/* The DJK graph structure is now initialized. Configure parameters.    */
-
-	/* Set the edge weights:                                                */
-	/* A-B => 1; A-C => 2; B-D => 2; C-D => 1                               */
-	/* This graph has two shortest-paths from vertex A to vertex D          */
-	prg_djk_edge_weight_set (edge_ab_ptr, 1);
-	prg_djk_edge_weight_set (edge_ac_ptr, 2);
-	prg_djk_edge_weight_set (edge_bd_ptr, 2);
-	prg_djk_edge_weight_set (edge_cd_ptr, 1);
-
+	OlsrT_Neighbor_Set_Entry*			Neighbor_Set;
+	FIN (Olsr_set_Signal_Value(int adr));
+	Neighbor_Set=(OlsrT_Neighbor_Set_Entry*) olsr_rte_neighbor_set_entry_get(adr);	/* get neighbor info		*/
 	
-	printf ("\tEdge address: (%lx)\n", (long) edge_ab_ptr);
-	printf ("\tEdge address: (%lx)\n", (long) edge_ac_ptr);
-	printf ("\tEdge address: (%lx)\n", (long) edge_bd_ptr);
-	printf ("\tEdge address: (%lx)\n", (long) edge_cd_ptr);
-	/* Now the graph is ready for path calculations.                        */ 
-
-	/***** Example 1: Compute a single path.                           *****/
-	printf ("\nExample 1:\n");
-
-	/* First, compute a path between vertex A and vertex B                  */
-	/* Since we have not run prg_djk_all_source_compute(), the path         */
-	/* will be computed without consulting routing tables.                  */
-	path_set_vptr = prg_djk_path_get (vtx_a_ptr, vtx_b_ptr);
-	printf ("Path set contains %d path(s).\n", prg_vector_size (path_set_vptr));
-
-	/* path_set_vptr is a vector (set) of vectors (paths) of edges.         */
-	/* There is one path from A to B, so path_set_vptr contains one vector. */
-	path_vptr = (PrgT_Vector *) prg_vector_access (path_set_vptr, 0);
-
-	/* path_vptr contains a single edge: edge_ab_ptr */
-	printf ("Path vector contains %d edge(s).\n", prg_vector_size (path_vptr));
-	edge_ptr = (PrgT_Graph_Edge *) prg_vector_access (path_vptr, 0);
-	printf ("Path's edge is%s edge_ab_ptr\n",
-		(edge_ptr == edge_ab_ptr) ? "" : " not");
-
-	/* We are done with the path and the path set, deallocate them: */
-	/* The contained edge is owned by the graph, so do not destroy elements. */
-	prg_vector_destroy (path_vptr, PRGC_FALSE); 
-
-	/* The paths have just been freed; do not re-free the path_set elements. */
-	prg_vector_destroy (path_set_vptr, PRGC_FALSE);
-
-	/***** Example 2: Compute all-pairs shortest paths.                  *****/
-	printf ("\nExample 2:\n");
-
-	/* Note that we do not re-initialized the DJK state or the edge weights  */
-	/* to run another path calculations.                                     */
-	status = prg_djk_all_sources_compute (graph_ptr);
-	if (status == PrgC_Compcode_Failure)
-		{ prg_graph_destroy (graph_ptr, PRGC_TRUE); FOUT;}
-
-
-	/* With routing tables established, every call to prg_djk_path_get will  */
-	/* use the routing tables to get the paths and will not recompute paths  */
-
-	/* Get the total cost of the path between A and D                        */
-	/* Note that no path vector is needed.                                   */
-	printf("The total cost of the shortest path between A and D is: %f\n",
-		prg_djk_path_cost_get (vtx_a_ptr, vtx_d_ptr));
-
-	/* Retrieve the path set from A to D, there are 2. */
-	path_set_vptr = prg_djk_path_get (vtx_a_ptr, vtx_d_ptr);
-
-	/* Confirm that there are 2 paths */
-	printf ("Path set contains %d path(s).\n", prg_vector_size (path_set_vptr));
-	if (prg_vector_size (path_set_vptr) != 2)
-		{
-		prg_vector_destroy (path_set_vptr, PRGC_TRUE);
-		prg_graph_destroy (graph_ptr, PRGC_TRUE);
-		FOUT;
-		}
-
-	/* Retrieve the second path */
-	printf ("Displaying  path:\n", prg_vector_size (path_set_vptr));
-	path_vptr = prg_vector_access (path_set_vptr, 0);
-	vsize = prg_vector_size (path_vptr);
-	for (i=0; i< vsize; i++)
-		{
-		PrgT_Graph_Edge *edge_ptr = 
-			(PrgT_Graph_Edge *) prg_vector_access (path_vptr, i);
-
-		/* For each edge in the path, perform some operation */
-		printf ("\tEdge address: (%lx)\n", (long) edge_ptr);
-		}
-
-	/* Deallocate paths and path set */
-
-	vsize = prg_vector_size (path_set_vptr);
-	for (i=0; i< vsize; i++)
-		{
-		PrgT_Vector *vptr = (PrgT_Vector *) prg_vector_access (path_set_vptr, i);
-			prg_vector_destroy (vptr, PRGC_FALSE); 
-		}
-	prg_vector_destroy (path_set_vptr, PRGC_FALSE);
-
-	/* Clean up.*/
-	prg_graph_destroy (graph_ptr, PRGC_TRUE);
+	
+	/* add signal strength ( force du	*/
+	/* signal) to neighbor set table.  	*/
+	Neighbor_Set->signal_value.signal_value_table[Neighbor_Set->signal_value.nbr_msg_received]=node_signal_strength;	
+	Neighbor_Set->signal_value.nbr_msg_received ++;
+	
 	FOUT;
-	} 
-	
-		
-	void print_vertex(char* s1,PrgT_Graph_Vertex * vertex,char* s2)	
-		{
-		
-		OlsrT_Djk_State* 		ara_state;
-		char  add[20];
-		InetT_Address		inet_local_intf_addr;
-		
-		FIN (print_vertex(<args>));
-		
-		ara_state = (OlsrT_Djk_State *) prg_vertex_client_state_get (vertex, OLSRC_DJK_STATE);
-		
-		
-		
-
-			inet_local_intf_addr = inet_rtab_index_to_addr_convert (ara_state->addr);
-	
-            inet_address_print (add, inet_local_intf_addr);
-
-			
-		
-		
-		printf(s1);
-		
-		
-		printf(" %s ",add);
-		
-		printf(s2);
-		
-		FOUT;
-		}
-		
-	
-	
-	double* get_SDN(int addr)
-		{
-	
-		
-		OlsrT_Neighbor_Set_Entry* 	nbr_set_entry_ptr = OPC_NIL;
-		double*                new_SDN_ptr;
-	
-			
-		FIN (get_SDN(int));
-		nbr_set_entry_ptr = (OlsrT_Neighbor_Set_Entry*) 
-			prg_bin_hash_table_item_get (neighbor_set_table, &addr);
-
-		new_SDN_ptr = (double*) op_prg_pmo_alloc (sdn_pmh);
-		*new_SDN_ptr = nbr_set_entry_ptr->stabilite.SDN;
-		
-		FRET(new_SDN_ptr);  
-   
- 
-		}
-	
-	
-
-
-void print_addr(int addr)
-	{
-	
-		InetT_Address				inet_nbr_addr;
-	char str[20];
-	
-		FIN (get_addr_str(<args>));
-	
-			inet_nbr_addr = inet_rtab_index_to_addr_convert (addr);
-			inet_address_print (str, inet_nbr_addr);
-		printf(" %s",str);
-		
-		FOUT;
 	
 	}
+// *************************************************************************************************************
 
 
-void	olsr_rte_calculate_FdN(void)
-	{
-	OlsrT_Two_Hop_Neighbor_Set_Entry*	voisin_de_deux_sauts;/*two_hop_nbr_entry_ptr*/
-	OlsrT_Neighbor_Set_Entry*			nbr_entry_ptr;
-	List*								keys_lptr;
-	int									i, num_keys;
-	int									j, num_one_hop_nbrs;
-	OlsrT_Nbr_Addr_Two_Hop_Entry*		Voisin = OPC_NIL;
-	OlsrT_Neighbor_Set_Entry*			Voisin_Candidat;
-		
-		
-		
-	FIN(olsr_rte_calculate_FdN(void))
-
-	
-/****************************************************/
-update_conf();/*initialiser Le FdN tous les noeud dans le voisinage*/
-/****************************************************/
-	
-	
-	
-if(Sim_Type!=TYPE_STANDARD)	
-{
-	keys_lptr = (List*) prg_bin_hash_table_item_list_get (two_hop_nbr_set_table);
-	num_keys = op_prg_list_size (keys_lptr);
-	
-	/* For each entry in two hop neighbor table	*/
-	//printf("il y'a %d noeud(s) 2-hop",num_keys);
-	//if(!num_keys)F;
-	for (i=0; i< num_keys; i++)
-		{
-		/* Get the two-hop-nbr entry ptr */
-		voisin_de_deux_sauts = (OlsrT_Two_Hop_Neighbor_Set_Entry*) op_prg_list_access (keys_lptr, i);
-		
-		//si l'@ de 2-hop ==mon @ alors Skip
-		if (voisin_de_deux_sauts->two_hop_addr == own_main_address)
-			{
-			continue;
-			}
-			
-		/* Initializing nbr ptr */
-		nbr_entry_ptr = OPC_NIL;
-		
-		/* Checking if this 2-hop-nbr is a SYM NBR */
-		/*ce noeud de deux saut est aussi d'un seul saut  Skip it*/
-		nbr_entry_ptr = (OlsrT_Neighbor_Set_Entry*) 
-			prg_bin_hash_table_item_get (neighbor_set_table, &(voisin_de_deux_sauts->two_hop_addr));
-		
-		/* Check the SYM-nbr condition */
-		if ((nbr_entry_ptr != OPC_NIL) &&
-			(nbr_entry_ptr->status == OLSRC_SYM_STATUS))
-			{
-			/* This 2-hop nbr is my SYM voisin */
-			/* Skip this 2-hop voisisn			*/
-			continue;
-			}
-	/*	if(!voisin_de_deux_sauts->strict_two_hop)
-			continue;
-			
-			
-			/* Get the number of one-hop-nbr to reach this 2-hop-nbr */
-			
-			num_one_hop_nbrs = op_prg_list_size (&voisin_de_deux_sauts->neighbor_list);
-	/****************************************************************************/		
-		/*	if(own_main_address==0){
-			printf("\n****** number of two hops %d --->",num_one_hop_nbrs);
-			print_addr(voisin_de_deux_sauts->two_hop_addr);
-			}*
-   /****************************************************************************/		
-			
-			//if(num_one_hop_nbrs>1)
-			{ double Temp_SdN=51.0,Temp_Signal=-51.0;
-			
-				for (j=0; j< num_one_hop_nbrs; j++)
-				{
-				/* For each one hop nbr addr */
-				Voisin = (OlsrT_Nbr_Addr_Two_Hop_Entry*)
-					op_prg_list_access (&voisin_de_deux_sauts->neighbor_list, j);
-
-				/* Get the neighbor entry ptr */
-			/*	if(Voisin->SDN> Temp_SdN)
-					{
-					Temp_SdN=Voisin->SDN;
-					Voisin_Candidat=Voisin->nbr_ptr;					
-					}
-			*/
-				
-				if(Sim_Type==TYPE_POWER)
-					{
-				
-					if(get_sdn_fs(Voisin->SDN,SDN_POWER) > Temp_Signal)
-						
-						{
-						Temp_Signal=get_sdn_fs(Voisin->SDN,SDN_POWER);
-						Voisin_Candidat=Voisin->nbr_ptr;
-						}
-					}
-				else
-					{
-						if(Sim_Type==TYPE_FS)
-							{
-					
-							if(get_sdn_fs(Voisin->SDN,SDN_FS)< Temp_SdN)
-						
-								{
-								Temp_SdN=get_sdn_fs(Voisin->SDN,SDN_FS);
-								Voisin_Candidat=Voisin->nbr_ptr;
-								}
-							}
-						else
-							{
-							if(Sim_Type==TYPE_POWER_FS)
-								{
-					
-								if(get_sdn_fs(Voisin->SDN,SDN_FS)< Temp_SdN)
-						
-									{
-									Temp_SdN=get_sdn_fs(Voisin->SDN,SDN_FS);
-									Voisin_Candidat=Voisin->nbr_ptr;
-									}
-								}
-							else
-								{
-								if((get_sdn_fs(Voisin->SDN,SDN_FS)== Temp_SdN)&&
-									(get_sdn_fs(Voisin->SDN,SDN_POWER) > Temp_Signal))
-									{
-										Temp_SdN=get_sdn_fs(Voisin->SDN,SDN_FS);
-										Temp_Signal=get_sdn_fs(Voisin->SDN,SDN_POWER);
-										Voisin_Candidat=Voisin->nbr_ptr;
-									}
-								}
-							}
-						}
-			
-				
-				}
-
-				Voisin_Candidat->conf++;
-			/*	if(own_main_address==0){
-				printf("\nCalcule de FdN de :");print_addr(Voisin_Candidat->nbr_addr);
-				printf(", Son SDN: %g",Voisin_Candidat->stabilite.SDN);
-				}*/
-				
-			
-			}
-		
-		}/*end for*/
-		
-	prg_list_destroy (keys_lptr, OPC_FALSE);
-	}
-	FOUT;
-	}
-
-
-static Boolean get_conf_tow_hop(double *Temp,OlsrT_Nbr_Addr_Two_Hop_Entry* voisin)
-{
-Boolean						is_great = OPC_FALSE;
-	FIN(get_conf_tow_hop(double* ,OlsrT_Nbr_Addr_Two_Hop_Entry*))
-
-	is_great=OPC_TRUE;
-	
-	FRET(is_great);
-}
-
-void update_conf(void)
+float signal_to_int(float a)
 	{	
-	
-	OlsrT_Neighbor_Set_Entry*			nbr_entry_ptr=OPC_NIL;
-	List*								keys_lptr;
-
-	PrgT_List_Cell	* key_cell_ptr;
-	
-			
-	FIN(update_conf(void))
-
-		
-	keys_lptr = (List*) prg_bin_hash_table_item_list_get (neighbor_set_table);
-
-	
-	for (key_cell_ptr = prg_list_head_cell_get (keys_lptr);
-		 key_cell_ptr;
-		 key_cell_ptr = prg_list_cell_next_get (key_cell_ptr))
-		{
-		/* For each entry value in neighbor table	*/
-		OlsrT_Neighbor_Set_Entry * nbr_entry_ptr =
-			(OlsrT_Neighbor_Set_Entry*) prg_list_cell_data_get (key_cell_ptr);
-		
-		nbr_entry_ptr->conf=0;
-		}
-	FOUT;
-	}
-
-
-	float signal_to_int(float a)
-	{	
-	
 		double i=0;		
 		int		alpha=0;
-		
 	FIN	(signal_to_int(float));
 		FRET(a);
 		
-	/*	while(a<1)
-		{
-			i++;
-			a*=10;
-
-		}
-	alpha=a*100;
-	alpha=999-alpha;
-	i=i*100+alpha;
-	*/	
+	/*	while(a<1)	{	i++;	a*=10;		}	alpha=a*100;	alpha=999-alpha;	i=i*100+alpha;	*/	
 
 	}
-	
-
-	/*
-char* get_addr_str(int addr)
-	{
-	
-		InetT_Address				inet_nbr_addr;
-	char* str=OPC_NIL;
-		//char* str2;
-	
-		FIN (get_addr_str(<args>));
-	
-			inet_nbr_addr = inet_rtab_index_to_addr_convert (addr);
-			inet_address_print (str, inet_nbr_addr);
-		//*str2=str;
-		FRET(str);
-	
-	}
-
-		*/
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-/*for(i=0;i<max+1;i++)
-	{
-		Xbar+=ara->val_signal.val_signal[i];
-		//printf("\n X[%d]= %g",i,noeud->val_signal.val_signal[i]);
-		}
-	Xbar/=(max+1);
-	printf("\nXbar=%g",Xbar);
-	
-	 Xbar2= Xbar* Xbar;
-	for(i=0;i<max+1;i++)
-		{
-		fs+=(ara->val_signal.val_signal[i]*ara->val_signal.val_signal[i]);
-		}
-	fs/=(max+1);
-	
-fs2=fs-Xbar2;
-		printf("\n(xi2/n-Xbar2)=( %g ) -( %g )= ( %g ) ara souti",fs,Xbar2,Sous(fs,Xbar*Xbar));
-	fs-=(Xbar*Xbar);// fs=somme(xi*xi/n)- (xbar*xbar) //variance;
-	
-	
-		printf("\nMy first stabilite %g",fs);
-	if(fs<0)fs*=-1;
-	ara->stabilite.SDN=fs;
-	
-	
-	
-	//if((ara->val_signal.nbr_msg_recevu)==40 || (ara->val_signal.nbr_msg_recevu)==80){
-		
-		if(ara->nbr_addr==0)
-			{
-
-	printf("\nN°		Valeur   From %d Message(s)",max);	
-	for(i=0;i<max;i++)
-	{
-	printf("\n%d        %g",i,ara->val_signal.val_signal[i]);
-	}
-}
-	
-	printf("\nMy stabilite %g",fs);
-	printf("\nMy Second stabilite %g",ara->stabilite.SDN);
-				//olsr_rte_neighbor_set_print_to_string();
-
-		
-	FOUT;
-	}
 
 
-	/*
-	double Codeur(double a,double b)
-	{
-
-		int a1=0,a2=0;
-		double  b1=0,Gamma=0.0;
-		int b2=0;
-		
-	FIN (Codeur(double,double));
-
-		printf("\nCodeur:.........Partie:1#");
-
-	while(a<1 && a>0)
-		{
-			a2++;
-			a*=10;
-
-		}
-	printf("\nCodeur:.........Partie:2#");
-		a1=a;
-  //	printf("\n\n(%d)e-(%d)",a1,a2);
-
-
-	
-
-	while(b<1 && b>0)
-		{
-			b2++;
-			b*=10;
-
-		}
-			printf("\nCodeur:.........Partie:3#");
-		b1=b;
-
-	// printf("\n\n(%g)e-(%d)",b1,b2);
-	  Gamma=(a1*100+a2*10+b1)/pow(10,b2);
-	  //printf("\n\nThe final =%g",Gamma);
-					printf("\nCodeur:.........Partie:Fin#");
-
-
-	FRET(Gamma);
-		}
-
-void Decodeur (double Gamma,double* power,double* fs)
-  {
-	double	a,b1;
-		int 	a1,a2=0,b2=0;
-
-	FIN (Decodeur (double ,double* ,double* ));
-
-	//	printf("\nDecodeur#");
-		a=Gamma;//printf("\na=  %g",a);
-
-		a/=100;
-	
-			printf("\nDecodeur:.........Partie:1#");
-		while(a<1 && a>0)
-		{
-			b2++;
-			a*=10;
-
-		}
-			printf("\nDecodeur:.........Partie:2#");
-		a1=a;
-		a2=((a2=(a*100))%100)/10;
-		b1=(((a*100))-((a1*100)+a2*10));
-
-	//	printf("\na= %g\na1=  %d\na2=  %d\nb1= %g\nb2= %d",a,a1,a2,b1,b2);
-
-
-		*power=a1/pow(10,a2);
-		*fs=b1/pow(10,b2);
-						printf("\nDecodeur:.........Partie:Fin#");
-	//	printf("\nAna nabeel signal=%g",*power);
-//		printf("\nAna nabeel FS=%g",*fs);
-		
-		FOUT;
-
-
-  }
-
-*/
-
-double Codeur(double a,double b)
-	{
-
-		int a1=0,a2=0;
-		double  b1=0,Gamma=0.0;
-		int b2=0;
-
-		FIN (Codeur(double,double));
-
-	while(a<1 && a>0)
-		{
-			a2++;
-			a*=10;
-
-		}
-		a1=a*10;	
-
-
-	while(b<1 && b>0)
-		{
-			b2++;
-			b*=10;
-
-		}
-		b1=b;
-
-
-	  Gamma=(a1*100+a2*10+b1)/pow(10,b2);
-	
-
-
-	FRET (Gamma);
-		}
-
-
-
-  void Decodeur (double Gamma,double *power,double *fs)
-  {
-	double	a,a1,b1=133.33;
-
-	  long	int 	a2=0,b2=0,a1x=0;
-
- 	FIN (Decodeur (double ,double* ,double* ));
-		a=Gamma;
-
-		
-		if(Gamma>1)
-		{
-
-			a1x=((a1x=a)%10000);
-			a1x/=100;
-			a1=(a1=a1x)/10;
-
-			a1x=((a1x=a)%100);
-			a1x/=10;
-
-		//	printf("\n\nRaha thadet Fs=0 wa a =%g   a1=%g",a,a1);
-		//	printf("\nExp:%d",a1x);
-			*power=a1/pow(10,a1x);
-			*fs=0;
-
-		//	printf("\n\n\nFinal Problem power %g   and Fs= %f",&power,&fs);
-		}
-		else
-		{
-		a/=100;
-		while(a<1 && a>0)
-		{
-			b2++;
-			a*=10;
-
-		}
-		b2++;
-
-
-		a1x=((a1x=a*10000)%100);
-		b1=(b1=a1x)/10;
-
-		a1x=((a1x=a*10)%100);
-		a1=(a1=a1x)/10;
-
-
-
-		a2=((a2=(a*100))%100);
-	 
-	
-
-		*power=a1/pow(10,a2);
-		*fs=b1/pow(10,b2);
-		}
-		FOUT;
-
-
-  }
-  
-  double get_sdn_fs(double sdn,int type)
-	 { double power,fs;
-	  	
-	 FIN ( get_sdn_fs(double ,int ));
-	Decodeur(sdn,&power,&fs);
-	 
-	 if (type==1)
-		{ FRET (power);}
-	 else	
-		{ FRET (fs);}
-		
-	 }
-  
-  
-  /*******************************************************************************/
-  
-  /*****update energy    c'est pour metrre a jour le niveau d'energie d'un noued *******/
-  
-  static int update_energy()
-	  {
-
-	FIN(update_energy());
-		  
-		    
-	 
-	  
-	 
-	  intial_energy = intial_energy - 1;
-	  
-	  FRET (intial_energy);
-	  
-	  }
-   
-  
-    /*****update energy    c'est pour recupirer le niveau d'energie d'un noued *******/
-
-  static int get_energy()
-	  {
-	   int current_energy;
-	FIN(get_energy());
-		  
-		    
-	 
-	  
-	  current_energy = intial_energy;
-	  
-	  FRET (current_energy);
-	  
-	  }
-   static int test_energy(int e)
-	  {
-	     int alpha ;
-	  
-	FIN( test_energy() );
-	  
-		  
-	   if(e > 70000 ) { /*60000*/
-	   alpha = 1  ;
-	   }
-	   else if(e > 20000 ){ /*20000*/
-	   alpha = 0.5  ;
-	   }
-	   else if (e < 1500){ /*100*/
-	   alpha = 0.1 ;
-		    
-	   }
-	  
-	  FRET (alpha);
-	  
-	  }
-  
-  /*******************************************************************************/
-  
-   /*static int update_energy()
-	  {
-	   int resu_energy;
-	FIN(update_energy());
-		  
-		    
-	 
-	  
-	  resu_energy = intial_energy;
-	  resu_energy = resu_energy - 1;
-	  
-	  FRET (resu_energy);
-	  
-	  }
-  */
-	  
 
