@@ -1,4 +1,4 @@
-/* Instrumenting functions for quantify profiling	*/
+﻿/* Instrumenting functions for quantify profiling	*/
 /* Does not affect models behavior.					*/
 static void 
 olsr_rte_neighborhood_topology_check_hello (void)
@@ -7,7 +7,7 @@ olsr_rte_neighborhood_topology_check_hello (void)
 	
 	olsr_rte_neighborhood_topology_check ();
 	
-	FOUT;
+	FOUT;lol
 	}
 static void 
 olsr_rte_neighborhood_topology_check_TC (void)
